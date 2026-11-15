@@ -1,6 +1,7 @@
 'use strict';
 
 const { PET_PERSONA, publicPetState } = require('./pet-persona.cjs');
+const { normalizeGeminiKey } = require('./credential-store.cjs');
 const MODEL = 'gemini-3.1-flash-lite';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const MAX_ATTEMPTS = 30;
@@ -28,11 +29,6 @@ const errors = {
 const failure = (code, httpStatus) => ({ ok: false, code, error: errors[code] || errors.unavailable,
   ...(Number.isInteger(httpStatus) && httpStatus >= 100 && httpStatus <= 599 ? { httpStatus } : {}) });
 
-function validKey(value) {
-  return typeof value === 'string' && value.trim().length >= 8 && value.trim().length <= 512
-    && /^[A-Za-z0-9_.-]+$/.test(value.trim()) && !/^(your[-_]?key|placeholder)/i.test(value.trim());
-}
-
 async function responseJSON(response, signal) {
   // Bound decoded data as well as the requested model output; do not surface raw errors.
   if (!response.body?.getReader) throw new Error('Missing response stream');
@@ -57,7 +53,7 @@ async function responseJSON(response, signal) {
 }
 
 function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fetch, env = process.env, timeoutMs = 25000, keyStore } = {}) {
-  let key = validKey(env.GEMINI_API_KEY) ? env.GEMINI_API_KEY.trim() : '';
+  let key = normalizeGeminiKey(env.GEMINI_API_KEY) || '';
   let attempts = 0, revision = 0, active = null, mutation = false;
   let credentialState = key ? 'session' : keyStore ? 'none' : 'unavailable';
   let lastError = null;
@@ -83,8 +79,9 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
     try {
       if (!keyStore) throw new Error('Storage unavailable');
       const saved = await keyStore.load();
-      if (saved !== null && !validKey(saved)) throw new Error('Invalid saved credential');
-      key = saved?.trim() || '';
+      const restoredKey = normalizeGeminiKey(saved);
+      if (saved !== null && !restoredKey) throw new Error('Invalid saved credential');
+      key = restoredKey || '';
       credentialState = key ? 'saved' : 'none';
       result = remember({ ok: true });
     } catch { credentialState = 'unavailable'; result = remember(failure('storage_load')); }
@@ -93,8 +90,8 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
   }
   async function configure(value) {
     if (active || mutation) return { ...failure('busy'), status: getStatus() };
-    if (!value || value.provider !== 'gemini' || !validKey(value.apiKey)) return { ...failure('invalid_config'), status: getStatus() };
-    const nextKey = value.apiKey.trim();
+    const nextKey = normalizeGeminiKey(value?.apiKey);
+    if (value?.provider !== 'gemini' || !nextKey) return { ...failure('invalid_config'), status: getStatus() };
     mutation = true;
     let result;
     try {

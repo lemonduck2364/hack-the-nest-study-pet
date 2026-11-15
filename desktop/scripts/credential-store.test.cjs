@@ -7,7 +7,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { createCredentialStore } = require('../src/credential-store.cjs');
 const FIRST = 'synthetic-test-key-first-00001';
-const SECOND = 'synthetic-test-key-second-0002';
+const SECOND = 'synthetic.test-key-second.0002';
 
 function encryptor() {
   const secret = crypto.randomBytes(32), calls = { available: 0 };
@@ -46,7 +46,7 @@ test('missing directory/file returns null without touching OS crypto; removing m
   await h.store.remove(); await fs.mkdir(h.directory); assert.equal(await h.store.load(), null);
   assert.equal(h.adapter.calls.available, 0);
 });
-test('persists encrypted bytes with owner-only permissions, reopens and atomically replaces the key', async t => {
+test('persists encrypted bytes with owner-only permissions, reopens and atomically replaces it with a key containing periods', async t => {
   const h = await fixture(t); await h.store.save(` ${FIRST} `);
   const firstBytes = await fs.readFile(h.filename);
   assert.equal(firstBytes.includes(Buffer.from(FIRST)), false);

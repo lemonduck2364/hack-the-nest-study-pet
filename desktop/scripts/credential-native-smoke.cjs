@@ -8,7 +8,7 @@ const os = require('node:os');
 const assert = require('node:assert/strict');
 const { createCredentialStore } = require('../src/credential-store.cjs');
 const [mode, directory] = process.argv.slice(2);
-const synthetic = 'synthetic-desktop-pet-key-never-a-real-credential';
+const synthetic = 'synthetic.desktop-pet.key-never-a-real-credential';
 app.setName(require('../package.json').name);
 app.whenReady().then(async () => {
   assert.ok(['save', 'restore-remove'].includes(mode));
