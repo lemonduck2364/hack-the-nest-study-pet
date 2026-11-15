@@ -4,7 +4,7 @@ Nest Pet is a little companion that lives on your Mac desktop. It plays and naps
 
 This team build has ten activities, cursor attention, and an optional Gemini-powered chat. The latest update remembers your Gemini key on this Mac, shows a spinner while a reply is on its way, and keeps the input ready for another message after a reply or an error.
 
-Long-term companion memory and a public Lobby for meeting other users' pets are planned.
+The pet can remember everyday details from conversation across app restarts. Review or remove them under **Connection… → Memories**. A shared Lobby is planned.
 
 ## Run the demo on your Mac
 

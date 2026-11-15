@@ -25,7 +25,8 @@ async function boot({ service, savedAppearance = 'dafeiyu', userData = '/synthet
     hide(){const was=this.visible;this.visible=false;if(was)this.emit('hide');} focus(){this.focuses++;}
     setIgnoreMouseEvents(){} loadFile(){} setVisibleOnAllWorkspaces(){throw new Error('must not broadcast across Spaces');}
   }
-  const app=new EventEmitter();Object.assign(app,{requestSingleInstanceLock:()=>true,whenReady:()=>Promise.resolve(),getPath:()=>userData,quit(){}});
+  let initialize;
+  const app=new EventEmitter();Object.assign(app,{requestSingleInstanceLock:()=>true,whenReady:()=>({then:fn=>{initialize=fn;}}),getPath:()=>userData,quit(){}});
   const screen=new EventEmitter();Object.assign(screen,{
     getPrimaryDisplay:()=>primary,getCursorScreenPoint:()=>({x:-500,y:500}),
     getDisplayNearestPoint:()=>displays.find(d=>d.id===2)||primary,
@@ -41,7 +42,7 @@ async function boot({ service, savedAppearance = 'dafeiyu', userData = '/synthet
     __dirname:path.dirname(main),process:{env:{},platform:'darwin'},performance:{now:()=>0},console,
     setInterval:fn=>{intervals.push(fn);return intervals.length;},clearInterval(){},setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},Date
   },{filename:main});
-  await new Promise(setImmediate);
+  await initialize();
   windows.forEach(w=>w.webContents.emit('did-finish-load'));
   return {windows,electron,timers,intervals,ipc,handlers,menu,savedAppearance:()=>savedAppearance,removeSecondary(){displays=[primary];screen.emit('display-removed',{},secondary);}};
 }

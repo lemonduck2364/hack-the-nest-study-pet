@@ -30,9 +30,56 @@ function render(next) {
   const detail=document.getElementById('last-failure'), last=status.lastError;
   detail.textContent=last?`Last issue: ${failureDescriptions[last.code]||'Chat could not complete the request'}${Number.isInteger(last.httpStatus)?` (HTTP ${last.httpStatus})`:''}.`:'';
   detail.hidden=!last; controls();
+  if (next.memory) renderMemory(next.memory);
 }
+
+const memoryList = document.getElementById('memory-list');
+const memoryStatus = document.getElementById('memory-status');
+const forgetAll = document.getElementById('forget-all');
+let shownMemory, forgetting = false, confirmAll = false;
+function renderMemory(memory) {
+  shownMemory = memory;
+  const disabled = requestBusy || forgetting;
+  memoryStatus.textContent = memory.state === 'unavailable'
+    ? 'Saved memories could not be accessed or changed.'
+    : memory.entries.length ? '' : 'Nothing saved yet.';
+  memoryList.replaceChildren();
+  for (const entry of memory.entries) {
+    const row = document.createElement('li');
+    const quote = document.createElement('span');
+    quote.textContent = entry.quote;
+    const forget = document.createElement('button');
+    forget.type = 'button';
+    forget.textContent = 'Forget';
+    forget.setAttribute('aria-label', `Forget: ${entry.quote}`);
+    forget.disabled = disabled;
+    forget.addEventListener('click', () => removeMemory(entry.id));
+    row.append(quote, forget);
+    memoryList.append(row);
+  }
+  forgetAll.disabled = disabled || (!memory.entries.length && memory.state !== 'unavailable');
+  forgetAll.textContent = confirmAll ? 'Confirm forget all' : 'Forget all memories';
+}
+async function removeMemory(id) {
+  if (forgetting || requestBusy || !shownMemory) return;
+  forgetting = true;
+  confirmAll = false;
+  error();
+  renderMemory(shownMemory);
+  let ok = false;
+  try { ok = (await api.forgetMemory(id)).ok; } catch {}
+  forgetting = false;
+  renderMemory(shownMemory);
+  if (!ok) memoryStatus.textContent = 'Could not forget that memory. Please try again.';
+}
+forgetAll.addEventListener('click', () => {
+  if (confirmAll) return removeMemory(null);
+  confirmAll = true;
+  renderMemory(shownMemory);
+});
+
 api.onChatState(render); api.chatState().then(render);
-api.onConnectionOpened(() => { field.value='';error();controls();field.focus(); });
+api.onConnectionOpened(() => { field.value='';error();controls();confirmAll=false;if(shownMemory)renderMemory(shownMemory);field.focus(); });
 field.addEventListener('input',controls);
 document.getElementById('close').addEventListener('click',()=>{field.value='';api.closeConnection();});
 document.getElementById('key-help').addEventListener('click',()=>api.keyHelp());
