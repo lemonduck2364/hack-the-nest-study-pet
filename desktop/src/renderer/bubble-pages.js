@@ -16,6 +16,53 @@
     }
     return pages.length?pages:[''];
   }
-  const api={paginateText};
+  function paginateSpeech(text, fits) {
+    if (!text || fits(text)) return [text];
+    const segment = granularity => [...new Intl.Segmenter(undefined, { granularity }).segment(text)];
+    const ends = segments => new Set(segments.map(({ index, segment }) => index + segment.length));
+    const graphemes = segment('grapheme');
+    const sentenceEnds = ends(segment('sentence'));
+    const wordEnds = ends(segment('word'));
+    const pages = [];
+    const offset = index => graphemes[index]?.index ?? text.length;
+    let start = 0;
+    while (start < graphemes.length) {
+      let low = start + 1;
+      let high = Math.min(start + 500, graphemes.length);
+      let end = low;
+      while (low <= high) {
+        const middle = Math.floor((low + high) / 2);
+        if (fits(text.slice(offset(start), offset(middle)))) {
+          end = middle;
+          low = middle + 1;
+        } else high = middle - 1;
+      }
+      if (end < graphemes.length) {
+        // Leave room for a natural breath without producing a string of tiny pages.
+        const preferred = Math.max(start + 1, start + Math.floor((end - start) / 2));
+        let boundary;
+        let priority = 0;
+        for (let candidate = end; candidate >= preferred; candidate--) {
+          const before = text.slice(offset(start), offset(candidate)).replace(/[^\S\n]+$/u, '');
+          const after = graphemes[candidate].segment;
+          const sentence = sentenceEnds.has(offset(candidate)) || /[。！？!?…\n]$/u.test(before);
+          const phrase = /[,;:，、；：—]$/u.test(before);
+          const word = wordEnds.has(offset(candidate));
+          const closesPhrase = /^[\p{Pe}\p{Pf}.,!?、。，！？；：]/u.test(after);
+          const score = closesPhrase ? 0 : sentence ? 3 : phrase ? 2 : word ? 1 : 0;
+          if (score > priority) {
+            boundary = candidate;
+            priority = score;
+          }
+          if (priority === 3) break;
+        }
+        end = boundary ?? end;
+      }
+      pages.push(text.slice(offset(start), offset(end)));
+      start = end;
+    }
+    return pages;
+  }
+  const api={paginateText,paginateSpeech};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.BubblePages=api;
 })(globalThis);

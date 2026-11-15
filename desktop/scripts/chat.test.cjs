@@ -66,7 +66,11 @@ test('invalid input and duplicate pending sends cannot spend extra requests', as
 
 test('provider errors and thrown network details never reach the UI', async () => {
   for (const [status, code] of [[400, 'request'], [401, 'auth'], [403, 'auth'], [404, 'request'], [429, 'quota'], [500, 'provider'], [503, 'provider']]) {
-    const chat = service({ fetchImpl: async () => new Response(JSON.stringify({ error: `secret=${KEY} https://evil.invalid/?key=${KEY}` }), { status }) });
+    let calls = 0;
+    const chat = service({ fetchImpl: async () => {
+      calls++;
+      return new Response(JSON.stringify({ error: `secret=${KEY} https://evil.invalid/?key=${KEY}` }), { status });
+    } });
     await connect(chat);
     const result = await chat.send('Hello');
     assert.equal(result.code, code);
@@ -74,22 +78,82 @@ test('provider errors and thrown network details never reach the UI', async () =
     assert.equal(JSON.stringify(chat.getStatus()).includes(KEY),false);
     assert.equal(JSON.stringify(result).includes(KEY), false);
     assert.deepEqual(chat.getTranscript(), []);
-    assert.equal(chat.getStatus().remaining, 29);
+    assert.equal(calls, status === 503 ? 2 : 1);
+    assert.equal(chat.getStatus().remaining, 30 - calls);
   }
   const chat = service({ fetchImpl: async () => { throw new Error(KEY); } });
   await connect(chat);
   assert.equal((await chat.send('Hi')).code, 'network');
 });
 
-test('timeout aborts request without retry and releases the single-flight lock', async () => {
+test('a transient network failure retries once with the same structured context and applies memory once', async () => {
+  const calls = [], applied = [];
+  const memory = {
+    usable: () => true,
+    snapshot: () => ({ entries: [{ id: 'm1', quote: 'I like hot tea.' }] }),
+    async apply(edits, text) { applied.push({ edits, text }); return { saved: true, changed: false }; },
+  };
+  const chat = service({ getMemory: () => memory, fetchImpl: async (_url, options) => {
+    calls.push(JSON.parse(options.body));
+    if (calls.length === 2) throw new Error('Connection reset');
+    return response(JSON.stringify({ reply: 'I will keep you company.', edits: [] }));
+  } });
+  await connect(chat);
+  assert.equal((await chat.send('Hello')).ok, true);
+  assert.equal((await chat.send('Can you stay?')).reply, 'I will keep you company.');
+  assert.equal(calls.length, 3);
+  assert.deepEqual(calls[1], calls[2]);
+  assert.deepEqual(calls[2].contents.map(item => item.role), ['user', 'model', 'user']);
+  assert.match(calls[2].systemInstruction.parts.at(-1).text, /I like hot tea/);
+  assert.equal(calls[2].generationConfig.responseMimeType, 'application/json');
+  assert.deepEqual(applied.map(turn => turn.text), ['Hello', 'Can you stay?']);
+  assert.equal(chat.getTranscript().length, 4);
+  assert.equal(chat.getStatus().remaining, 27);
+});
+
+test('clear during retry backoff cancels the original send before it can spend another request', async () => {
+  let calls = 0;
+  const chat = service({ fetchImpl: async () => { calls++; return new Response(null, { status: 503 }); } });
+  await connect(chat);
+  const pending = chat.send('Hi');
+  await new Promise(setImmediate);
+  chat.clear();
+  assert.equal((await pending).code, 'cancelled');
+  assert.equal(calls, 1);
+  assert.equal(chat.getStatus().remaining, 29);
+});
+
+test('transient failures use no retry when the time budget or session cap cannot support one', async () => {
+  let calls = 0;
+  const noTime = service({ timeoutMs: 100, fetchImpl: async () => { calls++; return new Response(null, { status: 503 }); } });
+  await connect(noTime);
+  assert.equal((await noTime.send('Hi')).httpStatus, 503);
+  assert.equal(calls, 1);
+
+  calls = 0;
+  const noSlot = service({ fetchImpl: async () => ++calls < 30 ? response() : new Response(null, { status: 503 }) });
+  await connect(noSlot);
+  for (let i = 0; i < 29; i++) assert.equal((await noSlot.send('Hi')).ok, true);
+  assert.equal((await noSlot.send('Hi')).httpStatus, 503);
+  assert.equal((await noSlot.send('Hi')).code, 'limit');
+  assert.equal(calls, 30);
+});
+
+test('timeout aborts request and releases the lock so a manual resend can succeed', async () => {
   let signal, calls = 0;
-  const chat = service({ timeoutMs: 10, fetchImpl: async (_url, options) => { calls++; signal = options.signal; return new Promise(() => {}); } });
+  const chat = service({ timeoutMs: 10, fetchImpl: async (_url, options) => {
+    if (++calls === 2) return response('I’m here.');
+    signal = options.signal;
+    return new Promise(() => {});
+  } });
   await connect(chat);
   assert.equal((await chat.send('Hi')).code, 'timeout');
   assert.equal(signal.aborted, true);
   assert.equal(calls, 1);
   assert.equal(chat.getStatus().busy, false);
   assert.deepEqual(chat.getTranscript(), []);
+  assert.equal((await chat.send('Hi')).reply, 'I’m here.');
+  assert.equal(chat.getTranscript().length, 2);
 });
 
 test('timeout also bounds response body reading', async () => {
@@ -121,8 +185,8 @@ test('history stays bounded; clearing or configuring does not reset session requ
   const chat = service({ fetchImpl: async (_url, options) => { calls++; lastBody = JSON.parse(options.body); return response('A little reply'); } });
   await connect(chat);
   for (let i = 0; i < 30; i++) assert.equal((await chat.send(`Hello ${i}`)).ok, true);
-  assert.equal(lastBody.contents.length, 13);
-  assert.equal(lastBody.contents[0].parts[0].text, 'Hello 23');
+  assert.equal(lastBody.contents.length, 7);
+  assert.equal(lastBody.contents[0].parts[0].text, 'Hello 26');
   assert.equal(chat.getTranscript().length, 60);
   chat.clear(); await connect(chat);
   assert.equal((await chat.send('More')).code, 'limit');

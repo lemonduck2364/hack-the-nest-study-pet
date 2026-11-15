@@ -90,7 +90,7 @@ test('Shift+Enter and IME composition do not submit; ordinary Enter does',async(
 });
 
 test('send failures explain quota, local budget, network, timeout and provider errors without losing drafts',async()=>{
-  const cases={quota:/quota or rate limit/,limit:/30-send limit/,network:/internet connection/,timeout:/too long/,provider:/temporarily unavailable/,empty:/no usable reply/,invalid_response:/unreadable reply/};
+  const cases={quota:/quota or rate limit/,limit:/30-request limit/,network:/internet connection/,timeout:/too long/,provider:/temporarily unavailable/,empty:/no usable reply/,invalid_response:/unreadable reply/};
   const messages=new Set();
   for(const [code,expected] of Object.entries(cases)){
     const h=harness({sendChat(){return Promise.resolve({ok:false,code});}});await new Promise(setImmediate);
@@ -103,6 +103,41 @@ test('send failures explain quota, local budget, network, timeout and provider e
     assert.equal(h.elements.get('connect-first').textContent,'Connection');
   }
   assert.equal(messages.size,Object.keys(cases).length);
+});
+
+test('timeout offers to resend the same draft and clears the warning after success', async () => {
+  const messages = [];
+  const h = harness({ async sendChat(text) {
+    messages.push(text);
+    return messages.length === 1 ? { ok: false, code: 'timeout' } : { ok: true, reply: 'I’m here.' };
+  } });
+  await new Promise(setImmediate);
+  const input = h.elements.get('message');
+  const send = h.elements.get('send');
+  const submit = () => h.elements.get('composer').events.submit({ preventDefault() {} });
+  input.value = 'Stay with me?';
+  await submit();
+  assert.equal(send.attributes['aria-label'], 'Retry message');
+  assert.equal(send.disabled, false);
+  await submit();
+  assert.deepEqual(messages, ['Stay with me?', 'Stay with me?']);
+  assert.equal(input.value, '');
+  assert.equal(send.attributes['aria-label'], 'Send message');
+  assert.equal(h.elements.get('chat-error').textContent, '');
+});
+
+test('the last failed request shows both the provider issue and exhausted local budget', async () => {
+  let calls = 0;
+  const h = harness({
+    async chatState() { return { status: { ready: true, busy: false, remaining: ++calls === 1 ? 1 : 0 } }; },
+    async sendChat() { return { ok: false, code: 'timeout' }; },
+  });
+  await new Promise(setImmediate);
+  h.elements.get('message').value = 'Keep this draft';
+  await h.elements.get('composer').events.submit({ preventDefault() {} });
+  assert.match(h.elements.get('chat-error').textContent, /took too long.*30-request limit/);
+  assert.equal(h.elements.get('send').disabled, true);
+  assert.equal(h.elements.get('message').value, 'Keep this draft');
 });
 
 test('replacing a rejected key clears its old connection warning without erasing the draft',async()=>{

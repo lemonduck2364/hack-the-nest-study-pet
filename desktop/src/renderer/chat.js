@@ -4,9 +4,11 @@ const input = document.getElementById('message');
 const errorBox = document.getElementById('chat-error');
 let status = { ready:false, busy:false, remaining:30 };
 let sending = false, composing = false, generation = 0, reconnect = false;
+let errorText = '', retryableDraft = null;
 let visible=false, pointerInside=false, idleTimer, fadeTimer, idleToken=0, lastActivity=0, previousBusy=false;
 let stateRevision=0, sendAttempt=0;
 const IDLE_MS=5000, FADE_MS=260;
+const LIMIT_MESSAGE = 'This session reached its 30-request limit. Please reopen the pet to continue.';
 function cancelIdle() {
   clearTimeout(idleTimer);clearTimeout(fadeTimer);idleTimer=fadeTimer=undefined;idleToken++;
   if(visible)document.body.dataset.phase='visible';
@@ -31,7 +33,11 @@ function resize() {
   api.resizeComposer(Math.ceil(document.getElementById('composer').getBoundingClientRect().height+10+noticeHeight));
 }
 function resizeInput() { input.rows=window.ComposerLines.visibleLines(input.value); resize(); }
-function renderError(text = '') {
+function renderError(message = errorText) {
+  errorText = message;
+  const text = status.remaining <= 0 && message !== LIMIT_MESSAGE
+    ? [message, LIMIT_MESSAGE].filter(Boolean).join(' ')
+    : message;
   errorBox.textContent = text;
   document.getElementById('connect-first').hidden = status.ready && !reconnect && !text;
   document.getElementById('connect-first').textContent = status.ready ? 'Connection' : 'Let’s connect first';
@@ -41,6 +47,11 @@ function renderError(text = '') {
 function controls() {
   const busy = sending || status.busy;
   const send = document.getElementById('send');
+  const retrying = retryableDraft === input.value && status.remaining > 0;
+  const sendLabel = retrying ? 'Retry message' : 'Send message';
+  send.textContent = retrying ? '↻' : '↑';
+  send.setAttribute('aria-label', sendLabel);
+  send.setAttribute('title', sendLabel);
   send.disabled = !status.ready || busy || !input.value.trim() || status.remaining <= 0;
   send.hidden = busy; document.getElementById('waiting').hidden = !busy;
   document.getElementById('composer').setAttribute('aria-busy',String(busy));
@@ -54,7 +65,7 @@ function render(next) {
   status = next.status;
   if ((!wasReady && status.ready) || issueResolved) reconnect = false;
   controls();
-  renderError(status.remaining <= 0 ? 'This run reached its 30-send limit. Please reopen the pet to continue.' : issueResolved ? '' : errorBox.textContent);
+  renderError(issueResolved ? '' : errorText);
 }
 api.onChatState(next=>{stateRevision++;render(next);});
 const initialRevision=stateRevision;
@@ -66,8 +77,8 @@ api.onComposerPresence?.(presence=>{
   activity();
 });
 api.onConversationCleared(() => {
-  generation++; sending = false; reconnect = false;
-  renderError(status.remaining <= 0 ? 'This run reached its 30-send limit. Please reopen the pet to continue.' : ''); controls();
+  generation++; sending = false; reconnect = false; retryableDraft = null;
+  renderError(''); controls();
 });
 document.getElementById('close-chat').addEventListener('click', closeComposer);
 document.getElementById('connect-first').addEventListener('click', () => api.openConnection());
@@ -78,7 +89,7 @@ async function sendMessage(event) {
   const thisGeneration = generation;
   const thisAttempt=++sendAttempt;
   const originalDraft = input.value;
-  sending = true; reconnect = false; renderError(); controls();
+  sending = true; reconnect = false; retryableDraft = null; renderError(''); controls();
   try {
     const result = await api.sendChat(text);
     if (thisGeneration !== generation) return;
@@ -86,11 +97,12 @@ async function sendMessage(event) {
       if (input.value === originalDraft) { input.value = ''; resizeInput(); closeComposer(); }
     } else {
       reconnect = ['auth','missing_key','invalid_config'].includes(result.code);
+      if (['timeout','network','provider'].includes(result.code)) retryableDraft = originalDraft;
       const messages = {
         auth:'Gemini rejected this key. Check Connection.', missing_key:'Connect Gemini to start chatting.',
-        invalid_config:'Check the key in Connection.', limit:'This run reached its 30-send limit. Please reopen the pet to continue.',
+        invalid_config:'Check the key in Connection.', limit:LIMIT_MESSAGE,
         quota:'Gemini’s quota or rate limit was reached. Try later or check the project limits.',
-        timeout:'Gemini took too long to reply. Your words are still here.',
+        timeout:'Gemini took too long to reply. Your draft is still here.',
         network:'Could not reach Gemini. Check your internet connection.',
         provider:'Gemini is temporarily unavailable. Please try later.',
         invalid_response:'Gemini returned an unreadable reply. Your words are still here.',
