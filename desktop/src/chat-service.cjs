@@ -23,7 +23,7 @@ const failure = code => ({ ok: false, code, error: errors[code] || errors.unavai
 
 function validKey(value) {
   return typeof value === 'string' && value.trim().length >= 8 && value.trim().length <= 512
-    && /^[A-Za-z0-9_-]+$/.test(value.trim()) && !/^(your[-_]?key|placeholder)/i.test(value.trim());
+    && /^[A-Za-z0-9_.-]+$/.test(value.trim()) && !/^(your[-_]?key|placeholder)/i.test(value.trim());
 }
 
 async function responseJSON(response, signal) {

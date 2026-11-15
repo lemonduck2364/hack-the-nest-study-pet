@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createChatService } = require('../src/chat-service.cjs');
-const KEY = 'unit-test-key-never-a-real-credential';
+const KEY = 'AQ.unit-test-key-never-a-real-credential';
 const response = (reply = 'I’m playing with my little cube.', extra = {}) => new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: reply }] } }], ...extra }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 const service = options => createChatService({ env: {}, ...options });
 function deferred() { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; }
