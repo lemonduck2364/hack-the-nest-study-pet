@@ -1,12 +1,8 @@
 'use strict';
-// Shared pure geometry and image deformation; no DOM, Electron or persistent data.
+// Shared geometry and whole-pixel gaze directions.
 (function (root) {
-  const eyeRegions = [
-    { x: 270, y: 178, width: 26, height: 24, maxX: 3, maxY: 2 },
-    { x: 321, y: 177, width: 28, height: 25, maxX: 3, maxY: 2 }
-  ];
-  const characterBounds = { x: 213, y: 63, width: 213, height: 267 };
-  const faceAnchor = { x: 309, y: 190 };
+  const characterBounds = { x: 14, y: 4, width: 51, height: 75 };
+  const faceAnchor = { x: 44, y: 33 };
   function normalizedDistance(pointer, bounds, focus) {
     if (!pointer || !bounds || ![pointer.x, pointer.y, bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite)
       || bounds.width <= 0 || bounds.height <= 0) return Infinity;
@@ -36,36 +32,12 @@
       }
     };
   }
-  function warpEyes(source, destination, width, height, gaze, regions = eyeRegions) {
-    if (source.length !== width * height * 4 || destination.length !== source.length) throw new Error('Unexpected frame size');
-    const gx = Math.max(-1, Math.min(1, Number(gaze.x) || 0));
-    const gy = Math.max(-1, Math.min(1, Number(gaze.y) || 0));
-    for (const region of regions) {
-      const { x, y, width: rw, height: rh, maxX, maxY } = region;
-      for (let py = y; py < y + rh; py++) for (let px = x; px < x + rw; px++) {
-        if (px < 0 || py < 0 || px >= width || py >= height) continue;
-        const nx = (px - (x + (rw - 1) / 2)) / ((rw - 1) / 2);
-        const ny = (py - (y + (rh - 1) / 2)) / ((rh - 1) / 2);
-        // Compact elliptical mask, zero outside and along the edge: no eyebrows,
-        // hair, mouth, silhouette or whole-face movement. Inverse sample originals.
-        const weight = Math.max(0, 1 - nx * nx - ny * ny);
-        const sx = Math.max(0, Math.min(width - 1, px - gx * maxX * weight));
-        const sy = Math.max(0, Math.min(height - 1, py - gy * maxY * weight));
-        const x0 = Math.floor(sx), y0 = Math.floor(sy);
-        const x1 = Math.min(width - 1, x0 + 1), y1 = Math.min(height - 1, y0 + 1);
-        const fx = sx - x0, fy = sy - y0;
-        const dst = (py * width + px) * 4;
-        for (let c = 0; c < 4; c++) {
-          destination[dst + c] = source[(y0 * width + x0) * 4 + c] * (1-fx) * (1-fy)
-            + source[(y0 * width + x1) * 4 + c] * fx * (1-fy)
-            + source[(y1 * width + x0) * 4 + c] * (1-fx) * fy
-            + source[(y1 * width + x1) * 4 + c] * fx * fy;
-        }
-      }
-    }
-    return destination;
+  function eyeDirection({ x, y }) {
+    const horizontal = x < -.25 ? 'w' : x > .25 ? 'e' : '';
+    const vertical = y < -.25 ? 'n' : y > .25 ? 's' : '';
+    return vertical + horizontal || 'center';
   }
-  const api = { gazeTarget, normalizedDistance, createAttentionGate, warpEyes, eyeRegions, characterBounds, faceAnchor };
+  const api = { gazeTarget, normalizedDistance, createAttentionGate, eyeDirection, characterBounds, faceAnchor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PetGaze = api;
 })(globalThis);

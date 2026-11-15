@@ -5,6 +5,4 @@ main { position: relative; width: 100%; height: 100%; }
 #pet-wrap { position: absolute; left: 0; top: 43px; width: 220px; height: 174px; transform-origin: center bottom; }
 #pet { position: absolute; inset: 0; display: block; border: 0; padding: 0; width: 220px; height: 174px; cursor: grab; touch-action: none; background: none; outline: none; overflow: hidden; }
 #pet:active, body.dragging #pet { cursor: grabbing; }
-#character-video, #attention-frame { display: block; position: absolute; left: -55px; top: -12px; width: 330px; height: 185.625px; pointer-events: none; }
-#attention-frame { opacity: 0; }
-#attention-source { display: none; }
+#character { display: block; position: absolute; left: 32px; top: 5px; width: 156px; height: 164px; image-rendering: pixelated; pointer-events: none; }

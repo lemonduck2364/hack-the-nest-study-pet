@@ -36,7 +36,7 @@ Set the key before recording. Keep it out of GitHub, screenshots and messages. T
 2. Send a short message and let the audience see its reply in the bubble. Record a backup of this flow before the presentation in case the network is slow.
 3. Use one visual to show where the product is going. The same pet goes from your desktop into a shared public Lobby, meets other users' pets, plays or talks with them, and comes home. Label this scene as the planned experience.
 
-The included character art is for private, noncommercial team review. Use original or cleared art for public presentation materials. See [asset credits](desktop/THIRD_PARTY_NOTICES.md).
+The desktop build uses the project’s red panda pixel-art character. See the [animation list and art files](desktop/README.md#red-panda-animations).
 
 ## If you get stuck
 

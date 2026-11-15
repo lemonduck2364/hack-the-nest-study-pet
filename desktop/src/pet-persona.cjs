@@ -14,7 +14,10 @@ function publicPetState(raw) {
   const activity = ['idle', 'play', 'rest', 'sleep'].includes(state.activity) ? state.activity : 'idle';
   const result = { activity };
   if (Number.isFinite(state.energy)) result.energy = Math.round(Math.max(0, Math.min(100, state.energy)));
-  if (activity === 'play') result.play = state.play === 'ball' ? 'playing with a little cat' : 'playing with a cube';
+  if (activity === 'play') {
+    const activities = { bounce: 'playing with a cube', peek: 'typing on a little laptop', ball: 'playing with a little cat' };
+    result.play = activities[state.play] || activities.bounce;
+  }
   return result;
 }
 

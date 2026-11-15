@@ -280,10 +280,10 @@ function createWindow() {
 }
 ipcMain.handle('pet:initial-state', event => validSender(event) ? viewState() : null);
 ipcMain.on('pet:diagnostic', (event, detail) => {
-  if (!debug || !validSender(event) || !['video-ready', 'video-error', 'video-alpha', 'gaze-ready', 'gaze-error', 'attention-on', 'attention-off'].includes(detail?.kind)
-    || !['idle', 'play-cube', 'play-cat', 'sleep-loop'].includes(detail?.clip)) return;
-  if (detail.kind === 'video-alpha') {
-    if (![detail.opaque, detail.transparent].every(n => Number.isInteger(n) && n >= 0 && n <= 14400)) return;
+  if (!debug || !validSender(event) || !['sprite-ready', 'sprite-error', 'sprite-alpha', 'sprite-clip', 'attention-on', 'attention-off'].includes(detail?.kind)
+    || typeof detail.clip !== 'string' || !/^[A-Za-z]{2,20}$/.test(detail.clip)) return;
+  if (detail.kind === 'sprite-alpha') {
+    if (![detail.opaque, detail.transparent].every(n => Number.isInteger(n) && n >= 0) || detail.opaque + detail.transparent !== 78 * 82) return;
     diagnostic(`${detail.kind} clip=${detail.clip} opaque=${detail.opaque} transparent=${detail.transparent}`);
   } else diagnostic(`${detail.kind} clip=${detail.clip}`);
 });
