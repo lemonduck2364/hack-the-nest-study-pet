@@ -29,3 +29,18 @@ No explicit license document accompanied the image. It is attributed here as
 Andrew/team-provided artwork according to Evan's description; no open-source
 license or public redistribution permission is invented. The integration is
 for the requested local project work.
+
+## Runtime life atlas
+
+`life-atlas.png` stores the unscaled original pixels in its first 724 rows,
+so the existing wave, book, and tea crops keep their original coordinates.
+The bottom row contains two new transparent stills. The built-in image
+generator used `andrew-original.png` as a visual reference to match the
+character and outfit in a seated, eyes-closed rest pose and a curled sleeping
+pose. The new stills were cropped to their visible bounds and packed together
+with the original so the renderer can load every pose before showing the pet.
+Both stills use a shared scale and ground line. The curled silhouette sits
+lower on the frame.
+
+Andrew’s pixel-art atlas on `origin/andrew/desktop-pet` is a separate art style
+and is unused here.

@@ -21,6 +21,7 @@ function harness(clip='play-cat', time=4, initiallyReady=true) {
     onLife(fn){receiveLife=fn;},onCursor(fn){cursor=fn;},initialState:()=>new Promise(()=>{})};
   const world={desktopPet:bridge,PetGaze:geometry,PetCharacterPacks:packs,PetCursorReaction:reactions,
     matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener(){},
+    PetSprite:{createPlayer:()=>({start(){},freeze(){},dispose(){}})},
     PetAnimation:{createPlayer(config){return {start(){},request(){},freeze(value){freezes.push(value);},
       react(request){requests.push(request);pending=request.clip;return true;},cancelReaction(){shown=clip;pending=undefined;},
       draw(){if(ready)config.present({currentTime:shown==='attention-look'?0:time,clip:shown},shown);},
@@ -30,7 +31,7 @@ function harness(clip='play-cat', time=4, initiallyReady=true) {
     body:{dataset:{},appendChild(){},classList:{add(){},remove(){}}}},Image:class{},ImageData:class{constructor(data){this.data=data;}},
     Uint8ClampedArray,requestAnimationFrame(fn){tick=fn;},Promise};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/renderer/pet.js'),'utf8'),sandbox);
-  return {raw,look,freezes,requests,move(point){cursor(point);},life(state){receiveLife({activity:'play',gazeEnabled:true,...state});},
+  return {raw,look,freezes,requests,move(point){cursor(point);},life(state){receiveLife({activity:'play',characterId:'dafeiyu',gazeEnabled:true,...state});},
     step(count=1){for(let i=0;i<count;i++){clock+=50;tick(clock);}return output;},
     decoded(){ready=true;},active(value){active=value;},startLook(){shown='attention-look';pending=undefined;},finish(){shown=clip;pending=undefined;}};
 }

@@ -9,16 +9,17 @@ test('appearance persists separately, supports both skins and ignores malformed 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nest-appearance-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const store = createAppearanceStore(dir);
-  assert.equal(store.load(), 'dafeiyu');
+  assert.equal(store.load(), 'red-panda');
   store.save('red-panda');
   assert.equal(createAppearanceStore(dir).load(), 'red-panda');
   assert.throws(() => store.save('../arbitrary-source'));
   assert.equal(store.load(), 'red-panda');
   assert.deepEqual(fs.readdirSync(dir), ['appearance.json']);
-  store.save('dafeiyu');assert.equal(store.load(), 'dafeiyu');
+  store.save('dafeiyu');
+  assert.equal(createAppearanceStore(dir).load(), 'dafeiyu');
   for (const content of ['{', JSON.stringify({characterId:'../other'}), 'x'.repeat(2048)]) {
     fs.writeFileSync(path.join(dir, 'appearance.json'), content);
-    assert.equal(store.load(), 'dafeiyu');
+    assert.equal(store.load(), 'red-panda');
   }
 });
 

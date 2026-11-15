@@ -17,17 +17,19 @@ test('pack registry defaults safely and every activity maps to an actual selecte
   assert.equal(activityClip(redPanda,{activity:'play',action:'cube'}),'reading');
   assert.equal(activityClip(redPanda,{activity:'play',action:'eat'}),'tea');
   assert.notEqual(activityClip(redPanda,{activity:'rest'}),activityClip(redPanda,{activity:'sleep'}));
-  assert.match(actionDescription(redPanda,{activity:'sleep'}),/book/);
+  assert.match(actionDescription(redPanda,{activity:'sleep'}),/asleep/);
   for(const pack of Object.values(registry))for(const active of Object.keys(pack.clips))for(const desired of Object.keys(pack.clips)) {
     assert.ok(pack.clips[nextClip(pack,active,desired)],`${pack.id}: ${active} → ${desired}`);
   }
 });
-test('original atlas crops match inspected metadata and all poses share head/ground anchors',()=>{
-  for(const [id,pose] of Object.entries(redPanda.sprites)) {
-    const original=metadata.poses[id];
+test('original atlas crops match inspected metadata and all poses share the ground anchor',()=>{
+  for(const [id,original] of Object.entries(metadata.poses)) {
+    const pose=redPanda.sprites[id];
     assert.deepEqual(pose.crop,Object.values(original.sourceRect));
     assert.deepEqual(pose.destination,Object.values(original.destinationRect));
-    assert.equal(pose.destination[1],63);assert.equal(pose.destination[1]+pose.destination[3],330);
+  }
+  for(const pose of Object.values(redPanda.sprites)) {
+    assert.ok(Math.abs(pose.destination[1]+pose.destination[3]-330)<.000001);
     assert.ok(Math.abs(pose.destination[0]+pose.destination[2]/2-320)<.000001);
   }
   assert.deepEqual(redPanda.defaultEyeRegions,metadata.poses.book.eyes.map(eye=>eye.frameRect));
@@ -39,20 +41,26 @@ test('sprite waits for decoded atlas and normalizes the exact book crop before p
   h.player.request('tea');assert.equal(h.player.current().clip,'tea');
   assert.deepEqual(h.draws.at(-1).slice(1),[...redPanda.sprites.tea.crop,...redPanda.sprites.tea.destination]);
 });
-test('sustained book attention keeps the body crop and resumes the prior pose without resetting it',()=>{
-  const h=harness();h.player.start();h.ready();const initialDraws=h.draws.length;
-  assert.equal(h.player.react(redPanda.reactions[0]),true);h.advance(60000);
-  assert.equal(h.player.current().clip,'attention-look');assert.equal(h.draws.length,initialDraws,'same book body is not replaced');
-  h.player.cancelReaction();assert.equal(h.player.current().clip,'reading');assert.equal(h.draws.length,initialDraws);
-  h.player.request('tea');h.player.react(redPanda.reactions[0]);h.player.cancelReaction();
-  assert.equal(h.player.current().clip,'tea','the interruption returns to the actual previous pose');
+test('sustained standing attention pauses either autonomous pose and restores its original crop',()=>{
+  const h=harness();h.player.start();h.ready();
+  const expectedCrop=pose=>[...pose.crop,...pose.destination];
+  for(const clip of ['reading','tea']) {
+    h.player.request(clip);
+    assert.equal(h.player.react(redPanda.reactions[0]),true);h.advance(60000);
+    assert.equal(h.player.current().clip,'attention-look');
+    assert.equal(h.player.inspect().active,clip);
+    assert.deepEqual(h.draws.at(-1).slice(1),expectedCrop(redPanda.sprites.wave));
+    h.player.cancelReaction();assert.equal(h.player.current().clip,clip);
+    assert.deepEqual(h.draws.at(-1).slice(1),expectedCrop(redPanda.sprites[redPanda.clips[clip].sprite]));
+  }
 });
-test('held state defers pose changes, reduced motion permits a new still, and sleep stays same-character fallback',()=>{
+test('held state defers pose changes, reduced motion permits a new still, and sleep disallows attention',()=>{
   const h=harness();h.player.start();h.ready();h.player.freeze(true);h.player.request('tea');h.player.draw();
   assert.equal(h.player.current().clip,'reading');assert.equal(h.player.react(redPanda.reactions[0]),false);
   h.player.freeze(false);assert.equal(h.player.current().clip,'tea');
-  h.player.freeze(true,true);h.player.request('sleep-book');assert.equal(h.player.current().clip,'sleep-book');
-  assert.equal(redPanda.clips['sleep-book'].sprite,'book');assert.equal(redPanda.clips['sleep-book'].fallback,true);
+  h.player.freeze(true,true);h.player.request(redPanda.sleep.loop);assert.equal(h.player.current().clip,redPanda.sleep.loop);
+  h.player.freeze(false);assert.equal(h.player.react(redPanda.reactions[0]),false);
+  assert.equal(h.player.current().clip,redPanda.sleep.loop);
 });
 test('unusable presented frame and stalled atlas loading release the lifecycle guard',()=>{
   const rejected=harness({usable:false});rejected.player.start();rejected.ready();

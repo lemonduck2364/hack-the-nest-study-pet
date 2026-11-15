@@ -63,4 +63,4 @@ The active app is in [`desktop/`](desktop/). The team's previous browser prototy
 
 ### Appearance preview
 
-The desktop pet menu offers **Dafeiyu** and **Red panda**. Both share the same pet state, conversation and saved Gemini connection. Red panda is a first pass using Andrew’s original still art: quiet reading, gentle proximity gaze and a tea pose, with the book pose used for unsupported activities and rest. It is not a full authored animation set. See `desktop/README.md` for the supported behaviors and limitations.
+Red panda is the default for new installations. She reads, takes tea breaks, sits quietly, and curls up for sleep. Move the cursor nearby when she's awake to see her switch to a standing attention pose. Choose **Dafeiyu** from the pet menu to switch appearances. See [the desktop guide](desktop/README.md) for the supported activities.
