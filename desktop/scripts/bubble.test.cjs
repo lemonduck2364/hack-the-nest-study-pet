@@ -35,7 +35,7 @@ test('subtitles prefer complete phrases and preserve mixed-language graphemes ex
 test('late initial bubble snapshot cannot overwrite a newer reply',async()=>{
   const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
   const elements=new Map();
-  const el=()=>({textContent:'',hidden:false,dataset:{},style:{},events:{},addEventListener(name,fn){this.events[name]=fn;},getBoundingClientRect(){return{height:Math.max(20,Math.ceil(Array.from(this.textContent).length/30)*20)};}});
+  const el=()=>({textContent:'',hidden:false,dataset:{},style:{},events:{},addEventListener(name,fn){this.events[name]=fn;},getBoundingClientRect(){return{height:20,width:this.textContent.length*6};}});
   const document={body:{dataset:{}},getElementById(id){if(!elements.has(id))elements.set(id,el());return elements.get(id);},addEventListener(){}};
   let publish,resolveOld,lastSized;
   const initial=new Promise(resolve=>{resolveOld=resolve;});
@@ -49,7 +49,7 @@ test('late initial bubble snapshot cannot overwrite a newer reply',async()=>{
 test('late same-content snapshot cannot undo a newer fade phase',async()=>{
   const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
   const elements=new Map();
-  const el=()=>({textContent:'',hidden:false,dataset:{},style:{},events:{},addEventListener(name,fn){this.events[name]=fn;},getBoundingClientRect(){return{height:20};}});
+  const el=()=>({textContent:'',hidden:false,dataset:{},style:{},events:{},addEventListener(name,fn){this.events[name]=fn;},getBoundingClientRect(){return{height:20,width:this.textContent.length*6};}});
   const document={body:{dataset:{}},getElementById(id){if(!elements.has(id))elements.set(id,el());return elements.get(id);},addEventListener(){}};
   let publish,resolveOld;
   const initial=new Promise(resolve=>{resolveOld=resolve;});
@@ -62,16 +62,17 @@ test('late same-content snapshot cannot undo a newer fade phase',async()=>{
   assert.equal(document.body.dataset.phase,'fading');
 });
 
-test('compact bubbles paginate without losing text and keep manual pages across phase updates',()=>{
+test('speech advances in a content-fit single line without page controls and captions retain their layout',()=>{
   const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
   const elements=new Map(),sizes=[],turns=[];
-  // A deterministic layout stand-in: narrow columns and the renderer's three line heights.
-  const lineHeight={speech:18,thought:17,action:15};
-  const textHeight=(value,kind)=>Math.max(1,Math.ceil(Array.from(value).length/12))*lineHeight[kind];
+  // The width stand-in leaves speech unwrapped, matching the real measurement node.
+  const textHeight=(value,kind)=>Math.max(1,Math.ceil(Array.from(value).length/12))*{thought:17,action:15}[kind];
+  const speechWidth=value=>Array.from(value.trim()).length*6;
   const document={body:{dataset:{}},getElementById(id){
     if(!elements.has(id))elements.set(id,{textContent:'',hidden:false,dataset:{},style:{},events:{},setAttribute(){},addEventListener(name,fn){this.events[name]=fn;},getBoundingClientRect(){
-      if(id==='measure')return{height:textHeight(this.textContent,this.dataset.kind),width:Math.min({speech:150,thought:144,action:160}[this.dataset.kind],Array.from(this.textContent).length*6)};
-      if(id==='bubble')return{height:textHeight(elements.get('bubble-text').textContent,this.dataset.kind)+30+(elements.get('pages').hidden?0:23)};
+      if(id==='measure'&&this.dataset.kind==='speech')return{height:18,width:speechWidth(this.textContent)};
+      if(id==='measure')return{height:textHeight(this.textContent,this.dataset.kind),width:Math.min({thought:144,action:160}[this.dataset.kind],Array.from(this.textContent).length*6)};
+      if(id==='bubble')return{height:this.dataset.kind==='speech'?30:textHeight(elements.get('bubble-text').textContent,this.dataset.kind)+30+(elements.get('pages').hidden?0:23)};
       return{height:18};
     }});
     return elements.get(id);
@@ -79,10 +80,7 @@ test('compact bubbles paginate without losing text and keep manual pages across 
   let publish, state;
   const api={onBubble(fn){publish=next=>{state=next;fn(next);};},onBubbleCursor(){},bubbleState(){return new Promise(()=>{});},resizeBubble(height,serial){sizes.push({height,serial});},bubbleInteractive(){},dismissBubble(){},bubblePage(page){
     turns.push(page);
-    const { index, pageLengths, togglePause } = page;
-    if (pageLengths) publish({ ...state, version: state.version+1, pageIndex: 0, paused: false });
-    else if (togglePause) publish({ ...state, version: state.version+1, paused: !state.paused });
-    else publish({ ...state, version: state.version+1, pageIndex: index });
+    publish({ ...state, version: state.version+1, pageIndex: 0 });
   }};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/renderer/bubble.js'),'utf8'),{window:{desktopPet:api,BubblePages},document});
   let serial=0;
@@ -93,25 +91,30 @@ test('compact bubbles paginate without losing text and keep manual pages across 
     assert.equal(elements.get('measure').dataset.sizing,undefined,'natural-width measuring must not leak into later pagination');
     const original=('慢慢看，沒有要趕你。🌊\n').repeat(30);
     publish({kind,text:original,serial:++serial,version:serial*100,phase:'visible',persistent:kind==='speech'});
-    assert.equal(elements.get('bubble').style.width,'180px','long pages may use the full bounded width');
     let reconstructed='';
-    const maxHeight={speech:36,thought:85,action:75}[kind];
     if (kind === 'speech') {
-      const firstPage = elements.get('bubble-text').textContent;
-      publish({ ...state, version: state.version+1, pageIndex: 1 });
-      assert.equal(elements.get('page-number').textContent, `2 / ${turns[0].pageLengths.length}`);
-      elements.get('pause').events.click();
-      assert.equal(elements.get('pause').textContent, '▶');
-      elements.get('previous').events.click();
-      assert.equal(elements.get('bubble-text').textContent, firstPage);
-    } else assert.equal(elements.get('pause').hidden, true);
-    do{
-      const page=elements.get('bubble-text').textContent;
-      assert.ok(textHeight(page,kind)<=maxHeight);
-      reconstructed+=page;
-      if(elements.get('next').disabled)break;
-      elements.get('next').events.click();
-    }while(true);
+      assert.equal(elements.get('pages').hidden, true);
+      assert.equal(elements.get('page-number').textContent, '');
+      for (const [pageIndex, length] of turns[0].pageLengths.entries()) {
+        publish({ ...state, version: state.version+1, pageIndex });
+        const line = elements.get('bubble-text').textContent;
+        const width = speechWidth(line);
+        assert.ok(width <= 147);
+        assert.equal(Array.from(line).length, length);
+        assert.equal(elements.get('bubble').style.width, Math.max(52, width + 33) + 'px');
+        assert.equal(sizes.at(-1).height, 54);
+        reconstructed += line;
+      }
+    } else {
+      assert.equal(elements.get('bubble').style.width,'180px');
+      do{
+        const page=elements.get('bubble-text').textContent;
+        assert.ok(textHeight(page,kind)<=(kind==='thought'?85:75));
+        reconstructed+=page;
+        if(elements.get('next').disabled)break;
+        elements.get('next').events.click();
+      }while(true);
+    }
     assert.equal(reconstructed,original);
     const lastPage=elements.get('bubble-text').textContent;
     publish({...state,version:state.version+1,phase:'fading'});

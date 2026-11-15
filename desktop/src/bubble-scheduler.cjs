@@ -3,6 +3,7 @@
 const FADE_MS = 260;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 function readingMs(characters) { return clamp(1800 + characters * 42, 3000, 12000); }
+function subtitleReadingMs(characters) { return clamp(1300 + characters * 52, 1850, 4500); }
 
 // Timers and time are injected so transport/recovery cannot silently replay content.
 function createBubbleScheduler({ now = Date.now, setTimer = setTimeout, clearTimer = clearTimeout, onChange = () => {} } = {}) {
@@ -27,24 +28,18 @@ function createBubbleScheduler({ now = Date.now, setTimer = setTimeout, clearTim
     active.phase = 'fading'; emit(); after(FADE_MS, finish);
   }
   function runSubtitle() {
-    if (active.paused || suspended) { cancelTimer(); return; }
+    if (suspended) { cancelTimer(); return; }
     subtitleDeadline = now() + subtitleRemaining;
     after(subtitleRemaining, () => {
       if (active.pageIndex + 1 < subtitlePages.length) showSubtitlePage(active.pageIndex + 1);
       else expire();
     });
   }
-  function preserveSubtitleTime() {
-    if (!active.paused && !suspended) subtitleRemaining = Math.max(0, subtitleDeadline - now());
-  }
   function showSubtitlePage(index) {
     active.pageIndex = index;
-    subtitleRemaining = readingMs(subtitlePages[index]);
+    subtitleRemaining = subtitleReadingMs(subtitlePages[index]);
     runSubtitle();
     emit();
-  }
-  function hasSubtitles(id) {
-    return id === active.serial && active.phase === 'visible' && subtitlePages !== null;
   }
   function show(content, reply) {
     cancelTimer();
@@ -74,28 +69,13 @@ function createBubbleScheduler({ now = Date.now, setTimer = setTimeout, clearTim
         || pageLengths.some(length => !Number.isInteger(length) || length < 1 || length > 4000)
         || pageLengths.reduce((sum, length) => sum + length, 0) !== Array.from(active.text).length) return false;
       subtitlePages = [...pageLengths];
-      active.paused = false;
       showSubtitlePage(0);
-      return true;
-    },
-    pageChanged(id, index) {
-      if (!hasSubtitles(id) || !Number.isInteger(index) || index < 0 || index >= subtitlePages.length
-        || Math.abs(active.pageIndex - index) !== 1) return false;
-      showSubtitlePage(index);
-      return true;
-    },
-    toggleSubtitlePause(id) {
-      if (!hasSubtitles(id)) return false;
-      preserveSubtitleTime();
-      active.paused = !active.paused;
-      runSubtitle();
-      emit();
       return true;
     },
     setSuspended(nextSuspended) {
       if (suspended === nextSuspended) return;
-      const showingSubtitles = hasSubtitles(active.serial);
-      if (showingSubtitles) preserveSubtitleTime();
+      const showingSubtitles = active.phase === 'visible' && subtitlePages !== null;
+      if (showingSubtitles && !suspended) subtitleRemaining = Math.max(0, subtitleDeadline - now());
       suspended = nextSuspended;
       if (showingSubtitles) runSubtitle();
     },
@@ -107,4 +87,4 @@ function createBubbleScheduler({ now = Date.now, setTimer = setTimeout, clearTim
     dispose() { cancelTimer(); active.phase = 'hidden'; },
   };
 }
-module.exports = { createBubbleScheduler, readingMs, FADE_MS };
+module.exports = { createBubbleScheduler, readingMs, subtitleReadingMs, FADE_MS };

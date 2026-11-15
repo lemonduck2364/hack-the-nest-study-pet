@@ -470,10 +470,7 @@ ipcMain.on('bubble:interactive', (event, value) => {
   }
 });
 ipcMain.on('bubble:page', (event, value) => {
-  if (!senderIs(event, bubbleWindow) || !value) return;
-  if (Array.isArray(value.pageLengths)) bubbles.setSpeechPages(value.serial, value.pageLengths);
-  else if (value.togglePause === true) bubbles.toggleSubtitlePause(value.serial);
-  else bubbles.pageChanged(value.serial, value.index);
+  if (senderIs(event, bubbleWindow)) bubbles.setSpeechPages(value?.serial, value?.pageLengths);
 });
 ipcMain.on('bubble:dismiss', (event, serial) => { if (senderIs(event, bubbleWindow) && serial === currentBubble.serial) dismissSpeech(serial); });
 if (!app.requestSingleInstanceLock()) app.quit();

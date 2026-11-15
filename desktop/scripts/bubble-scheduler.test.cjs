@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createBubbleScheduler, readingMs, FADE_MS } = require('../src/bubble-scheduler.cjs');
+const { createBubbleScheduler, readingMs, subtitleReadingMs, FADE_MS } = require('../src/bubble-scheduler.cjs');
 function setup() {
   let time=0, id=0;
   const timers=new Map(), scheduled=[], events=[];
@@ -59,7 +59,7 @@ test('each subtitle displays for its own reading time, even past the previous th
   assert.equal(bubble.setSpeechPages(serial, lengths), true);
   for (const [index, length] of lengths.entries()) {
     assert.equal(bubble.snapshot().pageIndex, index);
-    tick(readingMs(length)-1);
+    tick(subtitleReadingMs(length)-1);
     assert.equal(bubble.snapshot().pageIndex, index);
     assert.equal(bubble.snapshot().phase, 'visible');
     tick(1);
@@ -68,7 +68,7 @@ test('each subtitle displays for its own reading time, even past the previous th
   tick(FADE_MS);
   assert.equal(bubble.snapshot().phase, 'hidden');
 });
-test('manual navigation, pause, and drag suspension retain the right subtitle and elapsed time', () => {
+test('drag suspension retains the right subtitle and elapsed time', () => {
   const {bubble,tick,scheduled} = setup();
   bubble.speak('x'.repeat(60), true);
   const {serial} = bubble.snapshot();
@@ -82,20 +82,16 @@ test('manual navigation, pause, and drag suspension retain the right subtitle an
   firstTimer();
   assert.equal(bubble.snapshot().pageIndex, 0);
   bubble.setSuspended(false);
-  tick(2000);
+  tick(subtitleReadingMs(20)-1001);
+  assert.equal(bubble.snapshot().pageIndex, 0);
+  tick(1);
   assert.equal(bubble.snapshot().pageIndex, 1);
-  assert.equal(bubble.pageChanged(serial, 1), false, 'a late Next click cannot skip another page');
-  assert.equal(bubble.toggleSubtitlePause(serial), true);
-  assert.equal(bubble.pageChanged(serial, 0), true);
   bubble.setSuspended(true);
   tick(30000);
-  bubble.setSuspended(false);
-  tick(30000);
-  assert.equal(bubble.snapshot().pageIndex, 0);
-  assert.equal(bubble.snapshot().paused, true);
-  assert.equal(bubble.toggleSubtitlePause(serial), true);
-  tick(3000);
   assert.equal(bubble.snapshot().pageIndex, 1);
+  bubble.setSuspended(false);
+  tick(subtitleReadingMs(20));
+  assert.equal(bubble.snapshot().pageIndex, 2);
 });
 test('a replaced or dismissed subtitle cannot advance or restore stale speech', () => {
   const {bubble,tick,scheduled} = setup();
@@ -107,7 +103,7 @@ test('a replaced or dismissed subtitle cannot advance or restore stale speech', 
   const newer = bubble.snapshot();
   oldAdvance();
   assert.deepEqual(bubble.snapshot(), newer);
-  assert.equal(bubble.toggleSubtitlePause(serial), false);
+  assert.equal(bubble.setSpeechPages(serial, [4,5]), false);
   bubble.setSpeechPages(newer.serial, [4,5]);
   const dismissedAdvance = scheduled.at(-1);
   bubble.dismiss(newer.serial);
@@ -124,7 +120,7 @@ test('tap greetings do not interrupt a reply, but dismissal and subsequent new s
   assert.equal(bubble.dismiss(serial),true);tick(FADE_MS);
   assert.equal(bubble.snapshot().phase,'hidden');
   assert.equal(bubble.speak('oh hello',false),true);
-  assert.equal(bubble.pageChanged(bubble.snapshot().serial,1,300),false,'a greeting cannot extend its two-second dwell');
+  assert.equal(bubble.setSpeechPages(bubble.snapshot().serial,[3,5]),false,'a greeting cannot extend its two-second dwell');
   tick(1999);assert.equal(bubble.snapshot().phase,'visible');
   tick(1);assert.equal(bubble.snapshot().phase,'fading');
   tick(FADE_MS);assert.equal(bubble.snapshot().phase,'hidden');
