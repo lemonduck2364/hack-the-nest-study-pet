@@ -4,16 +4,27 @@
 
 A standalone transparent Electron desktop companion. It now plays, tires, rests, sleeps, and recovers without user input. Life remains a local rule-based simulation. Session chat can connect to Gemini with a user-provided API key. Learned long-term memory, persistent identity/state, Lobby, screen capture and autostart are not implemented.
 
-## Run
+## Try the demo on your Mac
 
-From `study-pet/desktop`:
+1. Sign in to GitHub with your team account, then [download the demo ZIP](https://github.com/lemonduck2364/hack-the-nest-study-pet/archive/refs/heads/team-demo-pre-motion.zip) and unzip it. If the link shows 404, check that your account accepted the invitation to the private repo.
+2. Install [Node.js 24 LTS for macOS](https://nodejs.org/en/download) if you don't already have Node.js 22.12 or newer. Pick the macOS installer and reopen Terminal afterward.
+3. In Finder, open the unzipped project and locate the **desktop** folder. Open **Terminal**, type `cd` followed by a space, then drag the **desktop** folder into Terminal and press **Return**. This enters the right folder even if its name has spaces.
+4. Run the first line below. When it finishes, run the second. Keep the Terminal window open while the pet is running. You only need the first line on a fresh download.
 
-```sh
-npm ci
-npm start
-```
+   ```sh
+   npm ci
+   npm start
+   ```
 
-The installed Electron version is pinned to **45.3.2**. Node >=22.12 is needed for its npm dependency. Electron supplies the actual app runtime.
+The pet should appear near the lower-right corner of the desktop. Open the **◉** menu at the top of the screen and select **Bring back** if you can't find it. The pet can play, nap and look toward your cursor right away.
+
+**Optional chat.** Open **◉ → Connection…**, paste your own [Gemini API key](https://aistudio.google.com/api-keys) and select **Set key**. Close Connection, then choose **Chat** in the **◉** menu, type a short message and press **Return**. The reply appears in the pet's bubble. Chat requires internet access, and the key must be entered again after restarting. For a recording, set the key before capturing your screen.
+
+To stop, choose **◉ → Quit**. Next time, open Terminal in the same **desktop** folder and run `npm start`.
+
+If Terminal says `command not found: npm`, reopen it after installing Node.js. If it says it can't find `package.json`, repeat step 3 with the **desktop** folder inside the unzipped project.
+
+## Desktop controls
 
 Click for a reaction; drag to move. Right-click the pet or use **◉** in the Mac menu bar for **Chat**, **Connection…**, **Nap / Wake**, **Gaze**, **Bring back**, and **Quit**. A manual nap lasts until explicitly woken; spontaneous naps end when energy recovers. Clicking a sleeping pet wakes it briefly without refilling its energy. Holding the pet pauses its life and animation. Position/energy reset on app restart.
 
