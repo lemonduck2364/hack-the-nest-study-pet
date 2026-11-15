@@ -1,20 +1,24 @@
 'use strict';
 // No Electron or wall-clock dependencies: one authoritative, bounded life simulation.
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-function createLife(random = Math.random) {
-  let state = { activity: 'idle', play: 'bounce', energy: 80, age: 0, duration: 4, manualNap: false, held: false, wakeGrace: 0 };
+const { createActionBag } = require('./action-bag.cjs');
+const { dafeiyu } = require('./renderer/character-pack.js');
+function createLife(random = Math.random, actions = Object.keys(dafeiyu.selfActions)) {
+  let motionPending = false;
+  const actionBag = createActionBag(actions, random);
+  let state = { activity: 'idle', play: actions[0], energy: 80, age: 0, duration: 4, manualNap: false, held: false, wakeGrace: 0 };
   const choose = () => clamp(Number(random()) || 0, 0, 0.999999);
   function enter(activity) {
     state.activity = activity;
     state.age = 0;
     state.duration = activity === 'play' ? 9 + choose() * 6 : activity === 'idle' ? 4 + choose() * 3 : 6;
-    if (activity === 'play') state.play = ['bounce', 'peek', 'ball'][Math.floor(choose() * 3)];
+    if (activity === 'play') state.play = actionBag.next();
   }
-  function snapshot() { return { ...state }; }
+  function snapshot() { return { ...state, action: state.play }; }
   return {
     snapshot,
     tick(seconds) {
-      if (state.held || !Number.isFinite(seconds) || seconds <= 0) return snapshot();
+      if (state.held || motionPending || !Number.isFinite(seconds) || seconds <= 0) return snapshot();
       // Do not replay hours of missed activity after sleep/resume or a blocked event loop.
       const dt = Math.min(seconds, 1);
       state.age += dt;
@@ -36,7 +40,8 @@ function createLife(random = Math.random) {
       if (state.activity === 'sleep' || state.activity === 'rest') this.wake();
       return snapshot();
     },
-    setHeld(held) { state.held = Boolean(held); return snapshot(); }
+    setHeld(held) { state.held = Boolean(held); return snapshot(); },
+    setMotionPending(pending) { motionPending = Boolean(pending); }
   };
 }
 module.exports = { createLife };

@@ -27,15 +27,25 @@ test('hint travel padding admits only the local margin', () => {
   assert.equal(pointInside({x:4,y:20},rect,5),false);
 });
 
-test('reply bubble fits above-left of the pet without covering its face', () => {
+test('compact replies sit centered above the head with a gap', () => {
   const pet={x:1000,y:500,width:220,height:240};
-  const bubble=bubbleBounds(pet,{width:280,height:230},area);
-  assert.equal(bubble.side,'left');
-  assert.ok(bubble.x+bubble.width<=pet.x+54);
-  assert.ok(bubble.y+bubble.height<=pet.y+105);
+  const bubble=bubbleBounds(pet,{width:200,height:190},area);
+  assert.equal(bubble.side,'center');
+  assert.equal(bubble.x+bubble.width/2,pet.x+105);
+  assert.equal(bubble.y+bubble.height,pet.y+58);
 });
-test('left-edge reply changes tail side and stays in the display', () => {
-  const bubble=bubbleBounds({x:0,y:35},{width:280,height:230},area);
-  assert.equal(bubble.side,'right');
-  assert.ok(bubble.x>=170 && bubble.y>=area.y+8);
+test('reserved headroom keeps the tallest bubble above the face at the top edge', () => {
+  const {fitPetBounds}=require('../src/window-layout.cjs');
+  const pet=fitPetBounds({x:0,y:25,width:220,height:240},area,140);
+  const bubble=bubbleBounds(pet,{width:200,height:190},area);
+  assert.ok(bubble.x>=area.x && bubble.y>=area.y+8);
+  assert.ok(bubble.y+bubble.height<=pet.y+58);
+});
+test('jump reaction raises the overhead bubble without covering the higher head pose', () => {
+  const {fitPetBounds}=require('../src/window-layout.cjs');
+  const pet=fitPetBounds({x:200,y:area.y,width:220,height:240},area,164);
+  const jump=bubbleBounds(pet,{width:200,height:190},area,{x:105,y:43});
+  assert.equal(jump.x+jump.width/2,pet.x+105);
+  assert.ok(jump.y>=area.y+8);
+  assert.equal(jump.y+jump.height,pet.y+43-6);
 });

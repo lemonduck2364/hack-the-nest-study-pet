@@ -1,14 +1,21 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktopPet', {
+  setMotionPending: pending => ipcRenderer.send('pet:motion-pending', Boolean(pending)),
   resizeComposer: height => ipcRenderer.send('chat:resize', height),
+  onComposerPresence: callback => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on('chat:presence', listener);
+    return () => ipcRenderer.removeListener('chat:presence', listener);
+  },
   openConnection: () => ipcRenderer.send('connection:open'),
   closeConnection: () => ipcRenderer.send('connection:close'),
   setCaption: value => ipcRenderer.send('pet:caption', value),
   bubbleState: () => ipcRenderer.invoke('bubble:state'),
   resizeBubble: (height, serial) => ipcRenderer.send('bubble:resize', { height, serial }),
-  bubbleInteractive: inside => ipcRenderer.send('bubble:interactive', inside),
-  dismissBubble: () => ipcRenderer.send('bubble:dismiss'),
+  bubbleInteractive: (inside, serial) => ipcRenderer.send('bubble:interactive', { inside, serial }),
+  bubblePage: value => ipcRenderer.send('bubble:page', value),
+  dismissBubble: serial => ipcRenderer.send('bubble:dismiss', serial),
   onBubbleCursor: callback => {
     const listener = (_event, point) => callback(point);
     ipcRenderer.on('bubble:cursor', listener);
@@ -38,6 +45,7 @@ contextBridge.exposeInMainWorld('desktopPet', {
   closeChat: () => ipcRenderer.send('chat:close'),
   chatState: () => ipcRenderer.invoke('chat:state'),
   configureChat: config => ipcRenderer.invoke('chat:configure', config),
+  disconnectChat: () => ipcRenderer.invoke('chat:disconnect'),
   sendChat: text => ipcRenderer.invoke('chat:send', text),
   clearChat: () => ipcRenderer.send('chat:clear'),
   keyHelp: () => ipcRenderer.send('chat:key-help'),

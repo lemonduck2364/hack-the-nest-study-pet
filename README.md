@@ -2,11 +2,13 @@
 
 Nest Pet is a little companion that lives on your Mac desktop. It plays and naps on its own, notices your cursor, and can talk to you through its own speech bubble.
 
-This team demo comes from the checkpoint before the animation and character pack changes. In the full vision, the same pet will learn how you like to be kept company and visit a public Lobby, where it can meet and interact with pets raised by other people. Long-term memory and the public Lobby are planned.
+This team build has ten activities, cursor attention, and an optional Gemini-powered chat. The latest update remembers your Gemini key on this Mac, shows a spinner while a reply is on its way, and keeps the input ready for another message after a reply or an error.
+
+Long-term companion memory and a public Lobby for meeting other users' pets are planned.
 
 ## Run the demo on your Mac
 
-You can set it up yourself with a GitHub account and two Terminal commands.
+This runs locally on your Mac. You can set it up with a GitHub account and two Terminal commands. If you downloaded an older demo, unzip a fresh copy using the link below.
 
 1. **Download the project.** Sign in to GitHub with an account that has access to this private repo. Choose **Code → Download ZIP** on the repo page, or [download the demo ZIP](https://github.com/lemonduck2364/hack-the-nest-study-pet/archive/refs/heads/desktop-pet.zip). Double-click the ZIP in Finder to unpack it.
 2. **Install Node.js once.** Open [the Node.js download page](https://nodejs.org/en/download), choose **24 LTS** and the **macOS Installer**, and run it. If you already have Node.js 22.12 or newer, skip the install. Open a fresh Terminal window afterward.
@@ -18,17 +20,25 @@ You can set it up yourself with a GitHub account and two Terminal commands.
    npm start
    ```
 
-Look near the lower-right corner of your desktop. If you can't find the pet, choose **◉ → Bring back** from the Mac menu bar. Keep Terminal open while the pet runs. Use **◉ → Quit** to close it. Next time, open Terminal in the same **desktop** folder and run only `npm start`.
+Look near the lower-right corner of your desktop. If you can't find the pet, choose **◉ → Bring back** from the Mac menu bar. Keep Terminal open while the pet runs. Use **◉ → Quit** to close it. Next time, double-click **Open Desktop Pet.command** in the unzipped project folder, or open Terminal in the same **desktop** folder and run `npm start`.
 
 ## Let the pet talk
 
 Play, naps and cursor interactions work without an AI key. To try a live response:
 
 1. Sign in to [Google AI Studio](https://aistudio.google.com/api-keys). Use **Create API key** if you don't already have a key, then copy it. [Google's setup guide](https://ai.google.dev/gemini-api/docs/api-key) covers project setup if asked.
-2. On the Mac, select **◉ → Connection…**. Paste your key in the password field, click **Set key**, and close Connection.
+2. On the Mac, select **◉ → Connection…**. Paste your key in the password field and click **Save key**. The app saves it encrypted on this Mac. Open Connection again if you need to replace or remove it.
 3. Choose **◉ → Chat**, type a short line such as “I'm taking a little break,” and press **Return**. The response shows up in the pet's speech bubble.
 
-Set the key before recording. Keep it out of GitHub, screenshots and messages. The app clears the key on restart. Chat sends the typed message and recent conversation context to Google, so use a short demo line.
+Set the key before recording. Keep it out of GitHub, screenshots and messages. Chat sends the typed message and recent conversation context to Google, so use a short demo line.
+
+## Test the latest chat update
+
+1. Send four short messages in a row, waiting for each reply before sending the next. The spinner should appear after each send and clear when a reply or error arrives.
+2. Open Chat, leave it empty, and move the pointer away for about five seconds. The input should fade out.
+3. Choose **◉ → Quit**, start the pet again, and send another message. The saved key should carry over.
+
+If chat gets stuck, open **◉ → Connection…** and share the displayed error or HTTP status with Evan. The pet keeps an unsent draft when a reply fails.
 
 ## Rehearse the demo
 
@@ -36,7 +46,7 @@ Set the key before recording. Keep it out of GitHub, screenshots and messages. T
 2. Send a short message and let the audience see its reply in the bubble. Record a backup of this flow before the presentation in case the network is slow.
 3. Use one visual to show where the product is going. The same pet goes from your desktop into a shared public Lobby, meets other users' pets, plays or talks with them, and comes home. Label this scene as the planned experience.
 
-The desktop build uses the project’s red panda pixel-art character. See the [animation list and art files](desktop/README.md#red-panda-animations).
+The included character art is temporary and for private, noncommercial team testing. See the [asset credits](desktop/THIRD_PARTY_NOTICES.md).
 
 ## If you get stuck
 

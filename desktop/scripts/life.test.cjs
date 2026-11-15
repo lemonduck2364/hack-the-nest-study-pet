@@ -20,11 +20,17 @@ test('without input, plays, tires, rests, sleeps, recovers and plays again', () 
   assert.equal(transitions.at(-1), 'play');
   assert.ok(recovered > sleptAt + 40);
 });
-test('play variants all selected through supplied randomness', () => {
-  for (const [value, expected] of [[0,'bounce'], [.4,'peek'], [.8,'ball']]) {
-    const life = createLife(() => value);
-    assert.equal(advance(life, 5).play, expected);
+test('all nine awake actions appear before repeating; sleep remains the tenth behavior', () => {
+  const life = createLife(() => .4), seen = [];
+  let previous = life.snapshot().activity, slept = false;
+  for (let i = 0; i < 4000 && seen.length < 9; i++) {
+    const state = life.tick(.25);
+    if (state.activity === 'sleep') slept = true;
+    if (state.activity === 'play' && previous !== 'play') { seen.push(state.action); assert.equal(state.action, state.play); }
+    previous = state.activity;
   }
+  const actions = Object.keys(require('../src/renderer/character-pack.js').dafeiyu.selfActions);
+  assert.equal(actions.length, 9); assert.deepEqual(new Set(seen), new Set(actions)); assert.equal(slept, true);
 });
 test('manual nap stays asleep after recovery; wake retains energy and allows activity', () => {
   const life = createLife(() => 0);
@@ -90,17 +96,59 @@ test('attention hysteresis rejects threshold jitter and exits immediately when d
 });
 test('attention radius uses visible character width and gaze originates at the eyes', () => {
   const { normalizedDistance, characterBounds, faceAnchor } = require('../src/renderer/gaze.js');
-  const scale=2;
+  const scale=330/640;
   const bounds=Object.fromEntries(Object.entries(characterBounds).map(([k,v])=>[k,v*scale]));
   const focus={x:faceAnchor.x*scale,y:faceAnchor.y*scale};
-  assert.equal(bounds.width,102);
+  assert.ok(bounds.width<115 && bounds.width>100);
   assert.equal(normalizedDistance({x:focus.x+3*bounds.width,y:focus.y},bounds,focus),3);
   assert.ok(gazeTarget({x:focus.x,y:focus.y-50},bounds,true,focus).y<0);
 });
-test('pixel gaze maps to eight whole-pixel directions and a neutral dead zone', () => {
-  const { eyeDirection } = require('../src/renderer/gaze.js');
-  assert.equal(eyeDirection({ x: -.25, y: .25 }), 'center');
-  assert.equal(eyeDirection({ x: .7, y: .1 }), 'e');
-  assert.equal(eyeDirection({ x: -.7, y: -.4 }), 'nw');
-  assert.equal(eyeDirection({ x: .3, y: .3 }), 'se');
+test('eye warp moves original iris pixels directionally and preserves all non-eye pixels', () => {
+  const { warpEyes, eyeRegions } = require('../src/renderer/gaze.js');
+  const width=640,height=360;
+  const original=new Uint8ClampedArray(width*height*4).fill(240);
+  for(let i=3;i<original.length;i+=4) original[i]=255;
+  for(const r of eyeRegions) {
+    const cx=r.x+(r.width-1)/2,cy=r.y+(r.height-1)/2;
+    for(let y=r.y;y<r.y+r.height;y++) for(let x=r.x;x<r.x+r.width;x++) if(Math.hypot(x-cx,y-cy)<4) {
+      const p=(y*width+x)*4; original[p]=20; original[p+1]=30; original[p+2]=40;
+    }
+  }
+  const saved=original.slice(),left=original.slice(),right=original.slice(),neutral=original.slice();
+  warpEyes(original,left,width,height,{x:-1,y:0}); warpEyes(original,right,width,height,{x:1,y:0});
+  warpEyes(original,neutral,width,height,{x:0,y:0});
+  assert.deepEqual(original,saved); assert.deepEqual(neutral,original);
+  let changed=0;
+  for(let y=0;y<height;y++) for(let x=0;x<width;x++) {
+    const inside=eyeRegions.some(r=>x>r.x&&x<r.x+r.width-1&&y>r.y&&y<r.y+r.height-1);
+    const p=(y*width+x)*4;
+    if(!inside) for(let c=0;c<4;c++) { assert.equal(left[p+c],original[p+c]); assert.equal(right[p+c],original[p+c]); }
+    else if(left[p]!==right[p]) changed++;
+  }
+  assert.ok(changed>100);
+  for(const r of eyeRegions) {
+    const centroid=data=>{
+      let sum=0,weight=0;
+      for(let y=r.y;y<r.y+r.height;y++) for(let x=r.x;x<r.x+r.width;x++) {const w=240-data[(y*width+x)*4];sum+=x*w;weight+=w;}
+      return sum/weight;
+    };
+    assert.ok(centroid(left)<centroid(original)-1);
+    assert.ok(centroid(right)>centroid(original)+1);
+  }
+});
+
+test('life waits for visual entrance without gaining sleep energy, then resumes; manual wake still works', () => {
+  const life = createLife(() => 0);
+  life.nap();
+  life.setMotionPending(true);
+  const waiting = life.snapshot();
+  for (let i = 0; i < 30; i++) life.tick(1);
+  assert.equal(life.snapshot().energy, waiting.energy);
+  assert.equal(life.snapshot().age, waiting.age);
+  life.wake();
+  assert.equal(life.snapshot().activity, 'idle');
+  life.setMotionPending(false);
+  life.tick(1);
+  assert.equal(life.snapshot().age, 1);
+  assert.ok(life.snapshot().energy < waiting.energy);
 });

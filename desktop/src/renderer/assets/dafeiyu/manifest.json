@@ -1,0 +1,513 @@
+{
+  "sourceRepository": "https://github.com/PC2005-cloud/dsh-pet",
+  "sourceCommit": "572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733",
+  "retrievedOn": "2026-11-15",
+  "license": "CC-BY-NC-SA-4.0 (visual character assets; see upstream notice)",
+  "modifications": "Unmodified upstream WebM bytes; filenames renamed for local use.",
+  "files": [
+    {
+      "file": "idle.webm",
+      "sourcePath": "dsh-pet/assets/webm/待机呼吸休闲.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%BE%85%E6%9C%BA%E5%91%BC%E5%90%B8%E4%BC%91%E9%97%B2.webm",
+      "bytes": 441437,
+      "sha256": "deb965d05a85dacf5ff4a20faa757846f0d11679598c3ec578a5571487660395"
+    },
+    {
+      "file": "play-cube.webm",
+      "sourcePath": "dsh-pet/assets/webm/原地专心玩魔方.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%8E%9F%E5%9C%B0%E4%B8%93%E5%BF%83%E7%8E%A9%E9%AD%94%E6%96%B9.webm",
+      "bytes": 442948,
+      "sha256": "ad54da175ba86b19a84b73b3169fb418b2df016560bb274283f200aca351e712"
+    },
+    {
+      "file": "play-cat.webm",
+      "sourcePath": "dsh-pet/assets/webm/撸猫.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E6%92%B8%E7%8C%AB.webm",
+      "bytes": 348432,
+      "sha256": "068d84e944dfce17de1c5a2ee2a4bc391e2848dad88a7df4877ebf23cf38bcec"
+    },
+    {
+      "file": "sleep-start.webm",
+      "sourcePath": "dsh-pet/assets/webm/睡觉-开始.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%9D%A1%E8%A7%89-%E5%BC%80%E5%A7%8B.webm",
+      "bytes": 331611,
+      "sha256": "5352a208925e01e191c1529d07c61ae61bcda90d92f2b89549c25c949f207e11"
+    },
+    {
+      "file": "sleep-loop.webm",
+      "sourcePath": "dsh-pet/assets/webm/睡觉-循环.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%9D%A1%E8%A7%89-%E5%BE%AA%E7%8E%AF.webm",
+      "bytes": 237002,
+      "sha256": "b49deb9b8dae4b83f84b6dc49efd41fdb654b05ad08ac6c5083977e17ef1122c"
+    },
+    {
+      "file": "sleep-end.webm",
+      "sourcePath": "dsh-pet/assets/webm/睡觉-起来.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%9D%A1%E8%A7%89-%E8%B5%B7%E6%9D%A5.webm",
+      "bytes": 379582,
+      "sha256": "a2a4832e546e7639782b74f998d8a6ebc2ec3b3b933c0bcc709487fb4d19ab46"
+    },
+    {
+      "file": "nap-cozy.webm",
+      "sourcePath": "dsh-pet/assets/webm/原地小憩沉眠.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%8E%9F%E5%9C%B0%E5%B0%8F%E6%86%A9%E6%B2%89%E7%9C%A0.webm",
+      "bytes": 433769,
+      "sha256": "31d4a6b36a29b2a4fe097384173d3bbeb3fa2f40f526b13191791456bf7507a1",
+      "gitBlobSha": "9b258545a841647a11ffdc5882ad8b2bb808a343",
+      "visualDescription": "Sits and naps, then stands; no blanket",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "nap-cozy",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          206,
+          29,
+          430,
+          331
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "work-laptop.webm",
+      "sourcePath": "dsh-pet/assets/webm/写代码.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%86%99%E4%BB%A3%E7%A0%81.webm",
+      "bytes": 383960,
+      "sha256": "0441287737cdbb993ce90dfa74c67ea4ea3549d8c8ea98946604668464589ed7",
+      "gitBlobSha": "47902f235c11fadd22134dd71d2fbcc3a36a13fc",
+      "visualDescription": "Types on a visible small laptop",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "work-laptop",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          210,
+          60,
+          432,
+          331
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "work-files.webm",
+      "sourcePath": "dsh-pet/assets/webm/工作状态-清点归档.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%B7%A5%E4%BD%9C%E7%8A%B6%E6%80%81-%E6%B8%85%E7%82%B9%E5%BD%92%E6%A1%A3.webm",
+      "bytes": 362510,
+      "sha256": "8c84f58f3a9e7b912e1cbfd89f77eb3652053fc9b2844295c8440cb636305d3b",
+      "gitBlobSha": "af694fb0013cbc0aa5313ab0221f417b4efdb14a",
+      "visualDescription": "Reads and sorts paper sheets; not a bound book",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "work-files",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          212,
+          63,
+          429,
+          330
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "juggle.webm",
+      "sourcePath": "dsh-pet/assets/webm/三球抛接.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E4%B8%89%E7%90%83%E6%8A%9B%E6%8E%A5.webm",
+      "bytes": 549316,
+      "sha256": "a64c08a4b7e5c3549616faf9dcd418e17f156b4b72d906646e4d57067df70d23",
+      "gitBlobSha": "a76228cb5f42fa159e3ec565b8ef969a7d289dca",
+      "visualDescription": "Juggles three colored balls",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "juggle",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          208,
+          36,
+          436,
+          332
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "eat.webm",
+      "sourcePath": "dsh-pet/assets/webm/吃饭·碗饭.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%90%83%E9%A5%AD%C2%B7%E7%A2%97%E9%A5%AD.webm",
+      "bytes": 436316,
+      "sha256": "17272de2ea1350146a8b9fa387d9a5c8eca16a222372479215088a9dfcfb9019",
+      "gitBlobSha": "791b20e72405251d6f0a286a31c7010c1110a17b",
+      "visualDescription": "Eating-expression gestures; no visible food prop in this video",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "eat",
+        "frames": 123,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 5.13,
+        "alphaBoundsAllFrames": [
+          202,
+          64,
+          432,
+          330
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "flute.webm",
+      "sourcePath": "dsh-pet/assets/webm/吹笛子.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%90%B9%E7%AC%9B%E5%AD%90.webm",
+      "bytes": 768350,
+      "sha256": "9c8b754a3256778cddd88fbb073b649d5b1d2e5f96e70231bc2c3bee06fa7c78",
+      "gitBlobSha": "fd57f820116b72c35e7b50ee3cdb5c20e775062b",
+      "visualDescription": "Plays flute; wide notes/effects outside current crop",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "flute",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          75,
+          25,
+          545,
+          336
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": false
+      }
+    },
+    {
+      "file": "toy-car.webm",
+      "sourcePath": "dsh-pet/assets/webm/原地蹲下玩玩具汽车.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%8E%9F%E5%9C%B0%E8%B9%B2%E4%B8%8B%E7%8E%A9%E7%8E%A9%E5%85%B7%E6%B1%BD%E8%BD%A6.webm",
+      "bytes": 505114,
+      "sha256": "3ec9978ce3663d9bc4bfe5f5223f0a4e3d9ea6fcd0a6acdbaa802e0cfba36bf2",
+      "gitBlobSha": "9a4ba01b33e6fba841a99ebf55631433651cdcd3",
+      "visualDescription": "Pushes toy car; car travels outside current crop",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "toy-car",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          74,
+          54,
+          548,
+          344
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": false
+      }
+    },
+    {
+      "file": "clean-table.webm",
+      "sourcePath": "dsh-pet/assets/webm/碎碎念-擦桌碎碎念.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%A2%8E%E7%A2%8E%E5%BF%B5-%E6%93%A6%E6%A1%8C%E7%A2%8E%E7%A2%8E%E5%BF%B5.webm",
+      "bytes": 350436,
+      "sha256": "bfb616a3e6ed7375826d8fd00b41b9476d2e4bd65e10abddfb98f04c734e30e6",
+      "gitBlobSha": "343513cf0d5583b5f476080d5082f3f5e01588b8",
+      "visualDescription": "Holds cloth and performs wiping gestures; no visible table or broom",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "clean-table",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          200,
+          62,
+          434,
+          331
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "leaves.webm",
+      "sourcePath": "dsh-pet/assets/webm/被落叶淹没.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E8%A2%AB%E8%90%BD%E5%8F%B6%E6%B7%B9%E6%B2%A1.webm",
+      "bytes": 766832,
+      "sha256": "91fc8e3dbfcd24546bc30366beb120fb5de7823ed67986dd8032c9c1b29ff079",
+      "gitBlobSha": "1e35fff171fb8856bd89de91329ef357c7d33e65",
+      "visualDescription": "Falling leaves pile up and character jumps; no broom or sweeping",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "leaves",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          33,
+          34,
+          611,
+          360
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": false
+      }
+    },
+    {
+      "file": "stretch.webm",
+      "sourcePath": "dsh-pet/assets/webm/超大伸懒腰.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E8%B6%85%E5%A4%A7%E4%BC%B8%E6%87%92%E8%85%B0.webm",
+      "bytes": 396987,
+      "sha256": "0ac66d918cc5efd49be1273c3830de73eae5f9bdcd5fcb968d1b2f9b487705ad",
+      "gitBlobSha": "689e04f120f9f678a9424dac6cadf4b6a0bd6e6b",
+      "visualDescription": "Yawns and stretches arms",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "stretch",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          211,
+          58,
+          431,
+          331
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "react-jump-grab.webm",
+      "sourcePath": "dsh-pet/assets/webm/原地跳跃抓碎头顶物品.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%8E%9F%E5%9C%B0%E8%B7%B3%E8%B7%83%E6%8A%93%E7%A2%8E%E5%A4%B4%E9%A1%B6%E7%89%A9%E5%93%81.webm",
+      "bytes": 619282,
+      "sha256": "ccb906c677c7b739eb0dbf5307160e66583562c2a6caec72a9d3d14a202fcccd",
+      "gitBlobSha": "b45cdcb57340f12fff1b40ea9391bdd1d3c2845a",
+      "visualDescription": "Crouches, jumps toward overhead star, lands; top effects exceed crop",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "react-jump-grab",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          113,
+          0,
+          526,
+          334
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": false
+      },
+      "reactionNotes": {
+        "observed": "Crouches, jumps, reaches an overhead star that bursts, lands; not a failed pounce",
+        "suggestedSegmentSeconds": [
+          3.7,
+          8.2
+        ],
+        "timingEvidence": "Visual inspection at 0.5-second intervals; segment endpoints need runtime acceptance",
+        "suggestedCanvasDIP": {
+          "left": -40,
+          "top": 0,
+          "width": 300,
+          "height": 168.75
+        },
+        "fitsSuggestedReactionCanvas": true
+      }
+    },
+    {
+      "file": "react-tail.webm",
+      "sourcePath": "dsh-pet/assets/webm/用鲸鱼尾巴拍打地面.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%94%A8%E9%B2%B8%E9%B1%BC%E5%B0%BE%E5%B7%B4%E6%8B%8D%E6%89%93%E5%9C%B0%E9%9D%A2.webm",
+      "bytes": 352213,
+      "sha256": "e3f92df2cf182fdcb109ad0a865689d66e0a0d10db14c1528e5b3cb2f0bf090d",
+      "gitBlobSha": "822a7c41f795906ca46e2f1757c63e6633d39214",
+      "visualDescription": "Crossed arms, tail taps ground",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "react-tail",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          209,
+          61,
+          469,
+          331
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "react-wave.webm",
+      "sourcePath": "dsh-pet/assets/webm/点击回应-元气挥手.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E7%82%B9%E5%87%BB%E5%9B%9E%E5%BA%94-%E5%85%83%E6%B0%94%E6%8C%A5%E6%89%8B.webm",
+      "bytes": 421669,
+      "sha256": "48cd729ccdcf746369942ea954d242e9afdd5643e1dac3827fa5e67450eb8776",
+      "gitBlobSha": "f60556f06c386cfb569f76b0cfa2e34e34fdc362",
+      "visualDescription": "Raises hands and waves, then returns to neutral",
+      "recommendedForCurrentActionSet": false,
+      "inspection": {
+        "clip": "react-wave",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          207,
+          36,
+          431,
+          330
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "violin.webm",
+      "sourcePath": "dsh-pet/assets/webm/小提琴演奏.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%B0%8F%E6%8F%90%E7%90%B4%E6%BC%94%E5%A5%8F.webm",
+      "bytes": 605350,
+      "sha256": "03816be0fcd499b63ed667e8b87c234094e64c59f1cd222455cf6a27ac832d1c",
+      "gitBlobSha": "2de1533cd0f2d7a72e0099f9ac6f816353f3912f",
+      "visualDescription": "Plays visible violin and bow",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "violin",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          136,
+          61,
+          470,
+          342
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "brush-teeth.webm",
+      "sourcePath": "dsh-pet/assets/webm/晨间刷牙.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E6%99%A8%E9%97%B4%E5%88%B7%E7%89%99.webm",
+      "bytes": 425460,
+      "sha256": "017e384e7e13732fb12428d024ef686e79df5b79bfab0d83faa7fa50653d1bc4",
+      "gitBlobSha": "66581dbd88c72bcba960d551b9cdcb0239da7d2f",
+      "visualDescription": "Uses toothbrush and cup, foamy mouth",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "brush-teeth",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          186,
+          61,
+          437,
+          347
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    },
+    {
+      "file": "eat-lunch.webm",
+      "sourcePath": "dsh-pet/assets/webm/吃午餐.webm",
+      "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733/dsh-pet/assets/webm/%E5%90%83%E5%8D%88%E9%A4%90.webm",
+      "bytes": 495122,
+      "sha256": "e48a70e61d93195c611c2d4041be32a26a114f78c835ff6b2345459ae39a90ce",
+      "gitBlobSha": "83618038d3d4fe98b9f42d0fd7ae1b7a24f686b3",
+      "visualDescription": "Eats noodles from a visible bowl with chopsticks",
+      "recommendedForCurrentActionSet": true,
+      "inspection": {
+        "clip": "eat-lunch",
+        "frames": 241,
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "durationSeconds": 10.04,
+        "alphaBoundsAllFrames": [
+          204,
+          60,
+          432,
+          333
+        ],
+        "hasTransparencyEveryFrame": true,
+        "hasOpaqueEveryFrame": true,
+        "fitsCurrentCrop": true
+      }
+    }
+  ],
+  "derivedFiles": [
+    {
+      "file": "idle-poster.png",
+      "source": "Original idle.webm first frame",
+      "sha256": "6205371155d09c1b00acc7a2b322a3dbb987fd9ec0daa21118a3065afebb35a3",
+      "license": "CC-BY-NC-SA-4.0 (same attribution as source visuals)"
+    },
+    {
+      "file": "eye-tracks.js",
+      "source": "Per-frame local calibration from idle/play-cube/play-cat videos; open-eye confidence gating",
+      "sha256": "57c7f493ead0b2b67001313882685c1c1a7de4b9fbb9388fe9546f88eeffdaa4",
+      "license": "CC-BY-NC-SA-4.0 (same attribution as source visuals)"
+    }
+  ],
+  "actionSetNotes": "Current requested ten total activities: nine awake (existing play-cube/play-cat plus work-laptop,work-files,eat-lunch,clean-table,stretch,violin,brush-teeth) and sleep lifecycle. Juggle is an inspected optional extra, not a default activity. Candidate downloads are not enabled merely by this manifest. No blanket, bound book, broom, or failed cursor pounce is present in the inspected set."
+}

@@ -1,20 +1,25 @@
 # Mac desktop pet — life, gaze and conversation
 
-> **Team demo snapshot.** The Mac desktop build uses the red panda sprite atlas for autonomous play, naps, and cursor gaze. Long-term memory and the public Lobby are planned.
-
 A standalone transparent Electron desktop companion. It now plays, tires, rests, sleeps, and recovers without user input. Life remains a local rule-based simulation. Session chat can connect to Gemini with a user-provided API key. Learned long-term memory, persistent identity/state, Lobby, screen capture and autostart are not implemented.
 
-## Try the demo on your Mac
+## Run
 
-Follow the [setup and rehearsal guide on the repo homepage](../README.md#run-the-demo-on-your-mac).
+Follow the [Mac setup instructions on the repo homepage](../README.md#run-the-demo-on-your-mac). After the first setup, double-click `Open Desktop Pet.command` at the root of the downloaded project. It uses the same app name and saved-key location as `npm start`. If already running, the single-instance guard brings back that pet. Quit from the pet menu before a deliberate restart. The launcher Terminal remains attached to the running pet.
 
-## Desktop controls
+Alternatively, from the `desktop` folder:
 
-Click for a reaction; drag to move. Right-click the pet or use **◉** in the Mac menu bar for **Chat**, **Connection…**, **Nap / Wake**, **Gaze**, **Bring back**, and **Quit**. A manual nap lasts until explicitly woken; spontaneous naps end when energy recovers. Clicking a sleeping pet wakes it briefly without refilling its energy. Holding the pet pauses its life and animation. Position/energy reset on app restart.
+```sh
+npm ci
+npm start
+```
+
+The installed Electron version is pinned to **45.3.2**. Node >=22.12 is needed for its npm dependency. Electron supplies the actual app runtime.
+
+Click for a reaction; drag to move. Right-click the pet or use **◉** in the Mac menu bar for **Chat**, **Connection…**, **Nap / Wake**, **Eye tracking**, **Bring back**, and **Quit**. A manual nap lasts until explicitly woken; spontaneous naps end when energy recovers. Clicking a sleeping pet wakes it briefly without refilling its energy. Holding the pet pauses its life and animation. Position/energy reset on app restart.
 
 ## Quiet conversation beside the pet
 
-Hover over the visible character and a single-line **What’s on my mind…** invitation appears beside her. It never takes focus. Clicking it opens a small input box, not a chatbot dashboard. Enter sends, Shift + Enter adds a line, and IME composition does not send accidentally. On success the unchanged sent draft clears and the input hides; a new draft typed during the request stays open. Failure keeps the draft with a short nontechnical notice.
+Hover over the visible character and a single-line **What’s on my mind…** invitation appears beside her. It never takes focus. Clicking it opens a compact single-line text bar. Long single-line text scrolls horizontally rather than increasing its height. Only explicit line breaks (Shift + Enter or pasted newlines) add rows, up to five visible rows. Enter sends and IME composition does not send accidentally. Connection/error notices are separate pills outside the input border. On success the unchanged sent draft clears and the input hides; a new draft typed during the request stays open. Failure keeps the draft with a short nontechnical notice. When the pointer is outside and there has been no keyboard activity for 5s, the composer fades over 260ms and hides without clearing its draft. Pointer return, typing, IME composition and an in-flight request prevent/cancel this idle fade. A rotating ring indicates waiting, with accessible status text and a static reduced-motion version. Stale status snapshots cannot overwrite newer pushed state or a newer send.
 
 The pet's visual language has no labels or energy bar:
 
@@ -22,35 +27,27 @@ The pet's visual language has no labels or energy bar:
 - Addressed speech uses a rounded balloon with a pointed tail.
 - Current activity uses a small unobtrusive ticket/pill.
 
-These are scripted thoughts and activity descriptions, not private model reasoning. Replies appear in the pet's own separate, nonfocusable speech bubble. Long replies paginate to the measured text area; arrows reveal every part, preserving all Chinese, emoji, whitespace and words. Replies are never silently truncated, never automatically paged, and stay until dismissed or replaced by another reply. Life updates cannot overwrite a reply being read. Text and empty areas remain mouse-pass-through; only page/dismiss controls intercept clicks. Bubbles prefer above-left of the character, flip at screen edges, and move with the pet.
+These are scripted thoughts and activity descriptions, not private model reasoning. Replies appear in the pet's own separate, nonfocusable speech bubble. Long replies paginate to the measured text area; arrows reveal every part, preserving the displayed text and emoji. Pagination preserves the reply text and does not auto-advance. All output is temporary: action captions last about 4.5s, thoughts 5.5s; a tap greeting lasts about 2s; model speech receives a 3–12s text-length reading window and then fades over 260ms. Page navigation grants more reading time within a 30s maximum lifetime per reply. New replies supersede old ones; stale timers/page events cannot hide or prolong a newer reply. After speech fades, the latest life caption is shown once and then also expires. Repeated identical captions do not restart timers, and dragging/reopening cannot resurrect expired text. Text and empty areas remain mouse-pass-through; only page/dismiss controls intercept clicks. All bubbles fit their current text and sit centered above the head in a transparent 200px window (visible body at most 180px). Speech uses five short lines per page; centered tails/dots point down. Placement reserves headroom. Fade, finite reading time and paging remain active.
 
-**Connection…** in the pet menu opens the separate setup panel. The normal composer contains no provider, quota, model, transcript, or status dashboard. Set a Gemini key in the password field, then choose **Set key**. This only configures the local session; it does not validate the key or make a network request. The field clears immediately. The key stays only in main-process memory and is not saved, logged, or returned in status. `GEMINI_API_KEY` can alternatively be supplied at launch. A successful reply verifies provider access. Both editable windows retain standard macOS Edit shortcuts and native Cut/Copy/Paste menus.
+**Connection…** opens the separate setup panel. The normal composer contains no provider, quota, model, transcript, or status dashboard. Paste a Gemini key in the password field and choose **Save key**; a connected user can **Replace** it or **Remove saved key**. The field clears immediately and is never prefilled from storage. Saving does not validate provider access or make a model request; a successful reply verifies access. Keys are encrypted with Electron's asynchronous `safeStorage` API (macOS Keychain-backed encryption) before writing `credentials/gemini.enc` under the app's `userData` directory. The directory is 0700 and the encrypted file 0600; replacement uses a synced temporary file and atomic rename. Startup restores after `app.ready`. No plaintext fallback, key logging, or key getter exists. Failed save/remove leaves the previous connection intact; unreadable saved data is retained for explicit replacement/removal and an error appears in Connection. Both editable windows retain standard macOS Edit shortcuts and native Cut/Copy/Paste menus.
 
-Sending shares the typed message, bounded recent session dialogue, and sanitized pet activity/energy with Gemini. The adapter uses `gemini-3.1-flash-lite`, a 25-second timeout, 512 output-token limit, no automatic retries, and at most 30 outbound attempts per app session. No fake pet response is produced on error. The service's session history is internal context, not a transcript screen. **Forget this conversation** inside Connection clears it and cancels an active reply; generation guards prevent old replies reappearing. This does not reset the request allowance. App restart loses the key, draft and conversation; there is no durable memory or credential storage.
+`GEMINI_API_KEY` remains an optional developer launch override: it takes precedence over a saved key and is session-only unless explicitly saved through settings. Disconnecting cannot edit the parent process environment, so an environment-supplied key returns on the next launch until that launch setting is removed. A packaged app will need a consistent signing identity for stable Keychain recognition across updates.
 
-## Red panda animations
+The persona instructs English-only replies even to non-English input, normally one short sentence and at most two (about 35 words); line breaks are collapsed into a single conversational turn. This is model guidance, not a language-classifier guarantee. Sending shares the typed message, bounded recent session dialogue, and sanitized pet activity/energy with Gemini. The adapter uses `gemini-3.1-flash-lite`, a 25-second timeout, 512 output-token limit, no automatic retries, and at most 30 outbound attempts per app session. No fake pet response is produced on error. Small notices distinguish network failure, 25s timeout, provider unavailability, unreadable/empty response, provider quota/rate limit, and the separate local 30-send test cap. Connection shows only a sanitized latest error code description and optional HTTP status; it never displays/logs raw provider bodies, request text or credentials. The earlier generic screenshot alone cannot identify its historical cause. The service's session history is internal context, not a transcript screen. **Forget this conversation** inside Connection clears it and cancels an active reply; generation guards prevent old replies reappearing. This does not reset the request allowance. App restart retains the encrypted saved key but loses draft and conversation; durable companion memory is still unimplemented.
 
-| Animation | Trigger |
-| --- | --- |
-| Idle and blink | Default awake activity |
-| Wave | Click while idle or as the pet finishes waking |
-| Cube turn | Autonomous play |
-| Pet a kitten | Autonomous play |
-| Open laptop, type, and close it | Autonomous play |
-| Drowsy blink and floating Zs | Low energy before a nap |
-| Settle, curl up, breathe with floating Zs, and wake | Manual or automatic nap/wake |
-| Directional gaze | A nearby cursor while awake, with **Gaze** enabled |
-| Held pose | Click-hold or drag |
+## Motion, gaze and character packs
 
-The red panda uses a 78×82 logical pixel grid and the shared 16-color art palette. The review GIFs are 313×331 with a solid magenta key. The app uses the same cels in a transparent sprite atlas with integer scaling. The timeline keeps entry, loop, and exit separate, so a laptop can stay open for the entire activity and a nap can finish with a wake-up animation. Floating Zs are a separate overlay and remain click-through.
+The pet now has one persistent visible canvas and two hidden video decode buffers. The next clip preloads and waits for the current clip to end; a new frame must be decoded and nonempty before replacing the visible canvas. Failed/slow replacements keep the last good picture. An attributed transparent idle poster covers initial loading. Stalled decoders release the life transition guard; renderer-process failures have bounded reload recovery without discarding main-process chat/key state.
 
-The running app reads `src/renderer/assets/red-panda/sprites.png` and its `sprites.js` frame map. Gaze overlays affect only the eyes and use whole-pixel steps. The threshold is three visible character widths from the face, approximately 306 DIP at the current size. Hit testing uses alpha from the current frame.
+Sleep routes through entrance → loop → exit. Life age/energy wait while the requested action is entering, so the pet cannot recover sleep energy before reaching its sleeping loop. Captions describe the displayed clip. Original source poses differ at some joins; these remain visible art limitations, not a seamless rig.
 
-## Life and cursor behavior
+Normal self-action videos are now shown unmodified; the earlier forced eye warping during activities is retired at Evan's request. The ten self-action sets are sleep plus nine awake activities: cube, kitty, laptop, papers, noodles, cloth wiping, stretch, violin, and brushing teeth. A shuffled bag visits every awake action before repeating and avoids back-to-back repetitions across bag boundaries. The clips visibly contain their corresponding props; this build has no blanket-pulling or broom-sweeping animation.
 
-A main-process state machine owns energy and activities. It begins idle for about four seconds, then alternates short play and idle periods. Play consumes energy; at low energy it settles for six seconds and sleeps until recovered. A full first cycle is approximately one to two minutes depending on the chosen play durations. Manual nap/wake and dragging override the cycle. Long delayed timer callbacks advance at most one second, preventing a burst of activity after Mac sleep/resume.
+While awake, a nearby cursor enters a separate attention pose and the eyes follow its position. Attention continues while the cursor stays nearby; leaving the range resumes the interrupted activity at its saved playback position. There is no special-action rotation or interaction cooldown. A short entry dwell and distance hysteresis prevent flicker at the range boundary. Sleep (including sleep transitions), dragging, reduced-motion mode, the Eye tracking toggle, and visible composer/settings suppress attention. Only the dedicated attention pose gently deforms its original eye regions; ordinary activity frames stay unmodified. The OS cursor is never moved or captured. Earlier jump/wave/tail assets remain installed but are not selected.
 
-Cursor position is sampled locally at 15 Hz through Electron `screen.getCursorScreenPoint()`. Both cursor and window bounds are device-independent pixels (DIP); no multiplication by Retina scale factor is applied. Gaze distance is relative to the rendered pet width, with a smooth edge fade. Coordinates are neither saved nor sent over a network. Reduced-motion preference disables CSS movement and holds a representative pose; life states still change. The small renderer opts out of background throttling so an unfocused desktop pet can animate.
+`character-pack.js` owns clip paths, activity mappings, descriptions, render dimensions, body/face anchors, poster and sleep routing. The same animation player is tested with a second synthetic pack. This proves the player/mapping contract, not a complete user-upload feature or a second visually validated character. Desktop window sizing/layout and character selection still need a broader import contract before arbitrary uploads. New packs need appropriate animation assets and their own attention calibration; personality/memory should remain independent of appearance.
+
+All companion windows are children of one pet window. They no longer opt into all macOS Spaces/fullscreen; the intended behavior is one ordinary desktop/display, with no pet on another application's fullscreen Space. Bring back moves the group to the cursor's display. Display removal/metrics changes reflow the group; parent hide hides companions. Native Space/fullscreen behavior still needs user acceptance.
 
 ## Checks
 
@@ -60,7 +57,7 @@ npm test
 npm run smoke
 ```
 
-The automated checks cover chat, window placement, autonomous life, animation transitions and gaze. The smoke command verifies the pinned Electron version and that the renderer assets are readable.
+Automated tests cover chat request limits/cancellation/errors, key handling, late-reply/draft and snapshot races, complete Unicode pagination, window placement, autonomous life, gaze thresholds and pixel-region preservation. The earlier actual-frame audit changed only eye pixels. `smoke` verifies installed Electron and asset readability in Node mode; none of these are GUI acceptance.
 
 
 Optional normal-entry diagnostics:
@@ -69,20 +66,32 @@ Optional normal-entry diagnostics:
 PET_DEBUG=1 npm start
 ```
 
-This prints activity transitions, sprite loading, clip changes, and attention transitions, and opaque/transparent sample counts. It does not print cursor coordinates. Diagnostics are off by default.
+This prints activity transitions, renderer lifecycle, video readiness/errors, gaze readiness and attention transitions, and opaque/transparent sample counts. It does not print cursor coordinates. Diagnostics are off by default.
 
 ## Desktop acceptance
 
+Team test build: Evan confirmed that his saved Gemini key works after restart, the idle input fades and the waiting spinner appears. Automated tests also exercise repeated sends, stale chat-state updates, quota failures and timeouts. The [rehearsal checks](../README.md#test-the-latest-chat-update) are still to be run on Andrew's Mac.
+
+Sustained attention revision: syntax checks, 85 automated tests and the Electron asset smoke check passed. It replaced brief special reactions with sustained awake-only attention, gave tap greetings a 2s lifetime, fit bubbles to text, and instructed short English-only model replies. Independent review passed 41 affected tests. Evan confirmed sustained left/right attention, resume on cursor exit, sleep suppression, the brief greeting and fitted bubble on his Mac. Earlier reports below apply only to their named prior revisions.
+
+Latest regression revision: current-frame gaze now has an actual-size cube/cat pixel regression and a renderer test keeping gaze active while sleep is queued. Bubbles expire/fade/release life captions, including stale-event and no-resurrection tests. Composer tests cover explicit line count, late edited draft, Shift+Enter and IME; native Edit-menu assertions remain. Full 66 checks passed before the final additional regressions; final focused UI 25 and motion 28 tests passed. Normal startup logs showed a thought fade/hide followed by a visible play-cube activity. Latest visual acceptance is pending; earlier acceptance below does not override Evan's later gaze complaint.
+
+Motion/Spaces revision: 52 automated tests, syntax checks and Electron asset smoke passed. Normal startup emitted a nonempty transparent idle frame and clip-visible diagnostics. CUA access to Electron was not approved this turn. Evan subsequently confirmed all three live checks: visible pet continues playing while watching the cursor, pet/bubbles stay out of fullscreen Spaces, and clicking after returning does not jump desktops. This is user-reported GUI acceptance, not an automated GUI observation. No screenshots or credentials were collected through another route.
+
+Redesigned UI: Planner launched the normal app and visually checked the small rounded composer, activity ticket, thought cloud with both detached dots, and separate Connection panel. A clipped lower thought dot was corrected and rechecked. Automated/source review passed. Evan tested this redesigned UI and reported that a reply arrived and the direction feels right. Paging controls, hover/focus and drag edge cases still need separate acceptance. The earlier live API result below belongs to the previous UI.
+
 Latest chat result: Evan entered a key in the app and confirmed that paste works and a real model reply arrived. The Planner observed the no-key setup layout, then key-set status, without reading or saving the key. The first native copy/paste failure was fixed by restoring Electron's standard Edit menu and input context menus. This confirms the first live conversation path; hover-focus, screen-edge, IME and cancellation UI edge cases below still need separate acceptance. Twenty-six automated tests passed before this small native-menu fix; its syntax check and user paste check passed afterward.
+
+Latest result: Evan confirmed the same-character gaze test (cursor left/right near the face, then away to resume activity) with “yes it's good.” The Planner also opened the flat menu and visually verified all four labels without truncation. Eleven automated tests passed; normal app diagnostics showed gaze preparation, attention entry, and attention stopping on natural sleep. Other platform and edge cases below remain separate checks.
 
 Evan reported the previous shell's click/drag, manual sleep/wake, transparent-area click-through and uninterrupted typing working. The redesigned small composer, shaped bubbles and separate Connection panel require actual desktop acceptance; earlier UI acceptance does not prove this redesign:
 
 - Hover while typing in another app: invitation must not steal focus. Move onto it and click; verify input opens only after that explicit action.
 - Verify left-edge placement, closing/reopening with a draft, IME Enter, no-key state, masked key setup, failed replies, and Clear chat during an in-flight request. The first successful live reply is user-confirmed above; other paths are distinct checks.
 - Observe a complete spontaneous play → tired rest → sleep → recovered activity cycle.
-- Verify sprite transparency and silhouette click-through, including moving limbs and empty margins.
+- Verify video transparency and silhouette click-through, including moving limbs and empty margins.
 - Check drag during each activity; it pauses rather than continuing to play in your hand.
-- Move the cursor around the red panda and verify its eyes follow the pointer. Move away and confirm its gaze recenters. Test Gaze off/on, sleeping, and holding during attention.
+- Move the cursor around the same 大肥魚, verify eye motion in the attention pose, then move away and confirm normal play resumes. Test Gaze off/on, sleeping, and holding during attention.
 - Verify manual nap stays asleep and wake works, including a low-energy pet.
 - Check normal typing, app switching, UI Quit, single-instance behavior, Spaces/fullscreen, screen changes, and OS sleep/resume as needed. Windows and signed distribution builds remain untested.
 
@@ -91,3 +100,12 @@ Evan reported the previous shell's click/drag, manual sleep/wake, transparent-ar
 Only local scripts, styles and media load in renderers. Their CSP disables network connections and form navigation; window opening/navigation and permission requests are denied. Gemini requests happen only in the main-process service after Send. The API-key help action opens one fixed official URL. Node integration is off, context isolation and renderer sandboxing are on. The preload exposes only fixed pet operations. IPC checks the exact owning window for pet, hint and chat actions, and validates drag coordinates. Only Connection may configure a key or clear the conversation; only the composer may send. The transcript is kept inside the service and is not sent to renderers. Bubble actions are limited to its own window and stale serials are rejected. The alpha mask and gaze are presentation concerns; the renderer cannot overwrite life/energy directly.
 
 Sources: [Electron screen/DIP](https://www.electronjs.org/docs/latest/api/screen), [BrowserWindow](https://www.electronjs.org/docs/latest/api/browser-window), [security](https://www.electronjs.org/docs/latest/tutorial/security).
+
+
+### Credential persistence checks
+
+`credential-store.test.cjs` uses synthetic encryption and temporary directories to test corruption, unavailable encryption, atomic failure, ordering, restore, replace and removal. `credential-native-smoke.cjs` can explicitly test native encryption with a synthetic credential only: create a dedicated temp directory whose name begins `pet-credential-smoke-`, then run Electron with that script in `save` and `restore-remove` modes against the same directory. Separate native Electron processes have passed encrypted save, cross-process restore, replacement and deletion on this Mac; this did not read the user's key or make a provider request.
+
+References: [Electron safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage), [Gemini troubleshooting](https://aistudio.google.com/docs/troubleshooting).
+
+Latest follow-up verification:123 automated tests, syntax and asset smoke pass; independent review passed43 UI/service/window tests. Starting through the project launcher after quitting restored the user-saved connection (`credentialState=saved`, `ready=true`) without displaying the key. Evan subsequently confirmed that chatting works after restart without re-entering the key, and that the idle fade and waiting spinner work. This does not establish the historical intermittent error cause or guarantee provider availability.
