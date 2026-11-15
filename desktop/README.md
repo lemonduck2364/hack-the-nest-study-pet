@@ -47,11 +47,13 @@ Correct a detail in conversation or ask the pet to forget it. In **Connection…
 
 The host listens when it creates a room, and closes the server when it leaves. Invites are intended for people sharing the local network. Room traffic carries a random pet ID, appearance, presence, and greeting state. Chat, Gemini credentials, and memory stay with the desktop companion.
 
-## Two appearances, one companion
+## Three appearances, one companion
 
-Use the flat pet-menu choices **Dafeiyu** and **Red panda** to change appearance. Red panda is the default for a fresh install. The choice is saved separately in `companion-settings/appearance.json`; it does not reset this session’s conversation, energy, manual nap or encrypted Gemini connection. Both choices use the same app name and user-data directory. Missing or unreadable preferences use Red panda. A saved Dafeiyu selection persists.
+Use the flat pet-menu choices **Dafeiyu**, **Red panda**, and **Pixel panda** to change appearance. Red panda is the default for a fresh install. The choice is saved separately in `companion-settings/appearance.json`; it does not reset this session’s conversation, energy, manual nap or encrypted Gemini connection. All choices use the same app name and user-data directory. Missing or unreadable preferences use Red panda. A saved Dafeiyu selection persists.
 
 Red panda rotates between reading, holding a cup of tea, sitting with her eyes closed, and curling up to sleep. When awake, a sustained nearby pointer switches her to a separate standing pose based on Andrew’s original wave art. Her eyes follow the pointer from that pose, and she returns to her activity when it moves away. The book, tea and wave poses come from Andrew’s unchanged PNG. Quiet sitting and curled sleep are AI-generated stills using that art as a reference. Poses share a ground anchor and switch directly. See [the asset notes](src/renderer/assets/red-panda/README.md) for provenance.
+
+Pixel panda uses 82 transparent frames from the supplied Aseprite sources. The authored entrances, loops and exits preserve a common ground line for cube play, kitten play, laptop typing and naps. Nearby attention uses the source eye pixels over the current pose, so looking toward the cursor keeps the current action moving. Sleep ignores cursor attention and a held pet pauses. The Lobby shows the same skin and gives it a wave pose during the welcome.
 
 Changing a skin disposes its old decoder handlers and frame callbacks so a late-loaded video cannot overwrite the new actor. The last valid visible picture remains during loading; failed decodes release the life guard. The chat model receives a description of the current appearance’s mapped activity.
 

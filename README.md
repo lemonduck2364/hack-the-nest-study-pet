@@ -50,7 +50,7 @@ If chat gets stuck, open **◉ → Connection…** and share the displayed error
 
 The greeting is scripted, so it works without a Gemini key. The room is hosted on the first Mac, and its invite works only while that room is open and reachable on the local network.
 
-If **Join** says it cannot connect, keep the host room open and copy a fresh invite after any Wi-Fi change. On both Macs, check **System Settings → Privacy & Security → Local Network** and confirm Nest Pet is allowed if it appears there. Some venue and guest networks block devices from reaching each other even on the same Wi-Fi. Switch both Macs to a network or hotspot that allows device-to-device connections, then host a new room and copy its new invite.
+If **Join** fails, first check that both Macs are running the same Nest Pet version. Keep the host room open and use **Copy Invite** again after any Wi-Fi change. On the joining Mac, check **System Settings → Privacy & Security → Local Network** and confirm Nest Pet is allowed if it appears there. Some guest networks block devices from reaching each other even on the same Wi-Fi. Switch both Macs to a network or hotspot that allows device-to-device connections, then copy a fresh invite.
 
 ## Rehearse the demo
 
@@ -71,4 +71,4 @@ The active app is in [`desktop/`](desktop/). The team's previous browser prototy
 
 ### Appearance preview
 
-Red panda is the default for new installations. She reads, takes tea breaks, sits quietly, and curls up for sleep. Move the cursor nearby when she's awake to see her switch to a standing attention pose. Choose **Dafeiyu** from the pet menu to switch appearances. See [the desktop guide](desktop/README.md) for the supported activities.
+Red panda is the default for new installations. She reads, takes tea breaks, sits quietly, and curls up for sleep. Move the cursor nearby when she's awake to see her switch to a standing attention pose. Choose **Dafeiyu** or **Pixel panda** from the pet menu to switch appearances. Pixel panda has frame-by-frame transitions for its puzzle cube, kitten, laptop and nap, with eyes that can track the cursor during an action. See [the desktop guide](desktop/README.md) for the supported activities.

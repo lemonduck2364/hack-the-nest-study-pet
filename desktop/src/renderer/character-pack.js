@@ -104,7 +104,82 @@
     },
     reactions: [{ clip: 'attention-look', still: true, sustained: true }]
   };
-  const registry = { dafeiyu, 'red-panda': redPanda };
+  const atlas = typeof module !== 'undefined' && module.exports
+    ? require('./assets/pixel-panda/frames.js') : root.PixelPandaAtlas;
+  const pixelActions = {
+    cube: { clip: 'cube', description: 'turning a little puzzle cube', caption: 'one more turn…' },
+    cat: { clip: 'cat', description: 'playing with a tiny kitten', caption: 'a little company for my kitty' },
+    laptop: { clip: 'laptop', description: 'typing on her little laptop', caption: 'tap tap… just doing my own thing' }
+  };
+  const pixelPlay = {
+    cube: pixelActions.cube, cat: pixelActions.cat, 'work-laptop': pixelActions.laptop,
+    'work-files': pixelActions.laptop, eat: pixelActions.cat, 'clean-table': pixelActions.cube,
+    stretch: pixelActions.cat, violin: pixelActions.cube, 'brush-teeth': pixelActions.laptop,
+    default: pixelActions.cube
+  };
+  const pixelGroups = {
+    idle: { loop: 'idle' },
+    rest: { loop: 'rest' },
+    cube: { enter: 'cubeEnter', loop: 'cube', exit: 'cubeExit' },
+    cat: { enter: 'catEnter', loop: 'cat', exit: 'catExit' },
+    laptop: { enter: 'laptopEnter', loop: 'laptop', exit: 'laptopExit' },
+    sleep: { enter: 'sleepEnter', loop: 'sleep', exit: 'sleepExit' }
+  };
+  const pixelCaptions = {
+    idle: { kind: 'thought', text: 'hmm… what shall I do?' },
+    rest: { kind: 'thought', text: 'getting a little sleepy…' },
+    sleepEnter: { kind: 'action', text: 'settling down for a nap…' },
+    sleep: { kind: 'action', text: 'a little nap…' },
+    sleepExit: { kind: 'thought', text: 'feeling a bit more rested…' },
+    'attention-look': { kind: 'thought', text: 'oh, hi there…' }
+  };
+  for (const action of Object.values(pixelActions)) {
+    const clips = Object.values(pixelGroups[action.clip]);
+    for (const clip of clips) pixelCaptions[clip] = { kind: 'action', text: action.caption };
+  }
+  const pixelClips = {};
+  for (const [group, phases] of Object.entries(pixelGroups)) {
+    for (const [phase, clip] of Object.entries(phases)) {
+      const source = clip === 'laptop' ? 'laptopTyping' : clip;
+      pixelClips[clip] = { group, phase, frames: atlas.tracks[source] };
+    }
+  }
+  pixelClips.sleep.bubbleAnchor = { x: 112, y: 91 };
+  pixelClips['attention-look'] = { directional: true };
+  const pixelPanda = {
+    id: 'pixel-panda', kind: 'atlas', width: 640, height: 360, atlas,
+    placement: { left: 202, top: 93, scale: 3 },
+    // The source gaze cels only alter eyes. Missing center-row center uses
+    // the original open-eyed pose rather than moving the entire face.
+    gazeFrames: [[55, 56, 57], [54, 53, 58], [61, 60, 59]],
+    bounds: { x: 244, y: 105, width: 153, height: 225 },
+    face: { x: 334, y: 195 },
+    display: { ...dafeiyu.display },
+    bubbleAnchor: { x: 117, y: 58 },
+    attentionEaseMs: 115,
+    initial: 'idle',
+    clips: pixelClips,
+    groups: pixelGroups,
+    reactions: [{ clip: 'attention-look', sustained: true }],
+    activities: {
+      idle: 'idle', rest: 'rest', sleep: 'sleep',
+      play: Object.fromEntries(Object.entries(pixelPlay).map(([id, action]) => [id, action.clip]))
+    },
+    sleep: pixelGroups.sleep,
+    captions: pixelCaptions,
+    selfActions: pixelActions,
+    actionDescriptions: {
+      idle: 'quietly standing and looking around',
+      rest: 'getting sleepy', sleep: 'curled up for a nap',
+      play: Object.fromEntries(Object.entries(pixelPlay).map(([id, action]) => [id, action.description]))
+    }
+  };
+  const registry = { dafeiyu, 'red-panda': redPanda, 'pixel-panda': pixelPanda };
+  const appearanceOptions = [
+    { id: 'dafeiyu', label: 'Dafeiyu' },
+    { id: 'red-panda', label: 'Red panda' },
+    { id: 'pixel-panda', label: 'Pixel panda' }
+  ];
   function resolvePack(id) { return Object.hasOwn(registry, id) ? registry[id] : dafeiyu; }
   function activityClip(pack, state) {
     const mapping = pack.activities[state.activity] || pack.initial;
@@ -123,7 +198,7 @@
     const description = pack.actionDescriptions?.[state.activity];
     return typeof description === 'string' ? description : description?.[state.action ?? state.play] || description?.default || 'spending a quiet moment';
   }
-  const api = { dafeiyu, redPanda, registry, packs: registry, resolvePack, activityClip, nextClip, actionDescription };
+  const api = { dafeiyu, redPanda, pixelPanda, appearanceOptions, registry, packs: registry, resolvePack, activityClip, nextClip, actionDescription };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PetCharacterPacks = api;
 })(globalThis);

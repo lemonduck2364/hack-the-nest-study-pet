@@ -31,6 +31,12 @@ function loadArt(src) {
   return image;
 }
 
+const pixelAtlas = window.PixelPandaAtlas;
+function pixelCrop(frame) {
+  return [frame % pixelAtlas.columns * pixelAtlas.width, Math.floor(frame / pixelAtlas.columns) * pixelAtlas.height,
+    pixelAtlas.width, pixelAtlas.height];
+}
+
 const artwork = {
   dafeiyu: {
     name: 'Dafeiyu',
@@ -42,6 +48,13 @@ const artwork = {
     image: loadArt('assets/red-panda/andrew-original.png'),
     idle: [785, 68, 561, 645],
     wave: [62, 8, 600, 708]
+  },
+  'pixel-panda': {
+    name: 'Pixel Panda',
+    image: loadArt(pixelAtlas.source),
+    idle: pixelCrop(pixelAtlas.tracks.idle[0][0]),
+    wave: pixelCrop(pixelAtlas.tracks.wave[3][0]),
+    pixelated: true
   }
 };
 
@@ -56,6 +69,8 @@ function drawPet(seat) {
   if (!pet) return;
 
   const character = appearanceFor(pet);
+  context.imageSmoothingEnabled = !character.pixelated;
+  art.style.imageRendering = character.pixelated ? 'pixelated' : 'auto';
   const [x, y, width, height] = character[pose] || character.idle;
   if (!character.image.naturalWidth) return;
 
@@ -149,6 +164,7 @@ function updateEntryControls() {
 
 function updateRoomStatus() {
   if (copied) roomStatus.textContent = 'Invite copied.';
+  else if (!state.invite) roomStatus.textContent = 'Connect to Wi-Fi or a hotspot to share an invite.';
   else roomStatus.textContent = state.pets.length < 2 ? 'Waiting for a friend…' : 'Your friend is here.';
 }
 
