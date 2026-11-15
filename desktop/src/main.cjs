@@ -4,14 +4,15 @@ const path = require('node:path');
 const { createLife } = require('./life.cjs');
 const life = createLife();
 const { createChatService } = require('./chat-service.cjs');
+const { createCompanionMemory } = require('./companion-memory.cjs');
 const { createCredentialStore } = require('./credential-store.cjs');
 const { resolvePack } = require('./renderer/character-pack.js');
 const { createAppearanceStore } = require('./appearance-store.cjs');
 const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
 const { adjacentBounds, bubbleBounds, pointInside, fitPetBounds } = require('./window-layout.cjs');
-let credentialStore, appearanceStore;
+let credentialStore, appearanceStore, memory;
 let characterId = 'dafeiyu';
-const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), keyStore: {
+const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), getMemory: () => memory, reportMemory: ({ proposed, changed, saved }) => diagnostic(`memory edits=${proposed} changed=${changed} saved=${saved}`), keyStore: {
   load: () => credentialStore.load(), save: key => credentialStore.save(key), remove: () => credentialStore.remove(),
 } });
 let lifeTimer, cursorTimer;
@@ -66,9 +67,10 @@ function secureWindow(window) {
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 }
 function chatSnapshot() { return { status: chat.getStatus() }; }
+function connectionSnapshot() { return { ...chatSnapshot(), memory: memory?.snapshot() }; }
 function publishChat() {
   if (chatReady && !chatWindow.isDestroyed()) chatWindow.webContents.send('chat:state', chatSnapshot());
-  if (connectionReady && !connectionWindow.isDestroyed()) connectionWindow.webContents.send('chat:state', chatSnapshot());
+  if (connectionReady && !connectionWindow.isDestroyed()) connectionWindow.webContents.send('chat:state', connectionSnapshot());
 }
 function placeBeside(window, size) {
   const petBounds = petWindow.getBounds();
@@ -386,7 +388,21 @@ ipcMain.on('chat:open', event => {
   if (senderIs(event, hintWindow) || validSender(event)) openChat();
 });
 ipcMain.on('chat:close', event => { if (senderIs(event, chatWindow)) closeChat(); });
-ipcMain.handle('chat:state', event => senderIs(event, chatWindow) || senderIs(event, connectionWindow) ? chatSnapshot() : null);
+ipcMain.handle('chat:state', event => {
+  if (senderIs(event, connectionWindow)) return connectionSnapshot();
+  return senderIs(event, chatWindow) ? chatSnapshot() : null;
+});
+ipcMain.handle('chat:forget-memory', async (event, id) => {
+  if (!senderIs(event, connectionWindow)) return { ok: false };
+  const pending = chat.forgetMemory(id); publishChat();
+  const ok = await pending;
+  if (ok) {
+    chatGeneration++; dismissSpeech();
+    if (chatReady) chatWindow.webContents.send('chat:cleared');
+  }
+  publishChat();
+  return { ok };
+});
 ipcMain.handle('chat:configure', async (event, config) => {
   if (!senderIs(event, connectionWindow)) return { ok: false, error: 'Unavailable.' };
   const pending = chat.configure(config); publishChat();
@@ -459,7 +475,8 @@ else {
   app.on('second-instance', showPet);
   app.whenReady().then(async () => {
     credentialStore = createCredentialStore({ directory: path.join(app.getPath('userData'), 'credentials'), safeStorage });
-    await chat.restoreCredentials();
+    memory = createCompanionMemory({ directory: path.join(app.getPath('userData'), 'companion-memory'), safeStorage });
+    await Promise.all([chat.restoreCredentials(), memory.restore()]);
     appearanceStore = createAppearanceStore(path.join(app.getPath('userData'), 'companion-settings'));
     characterId = appearanceStore.load();
     bubbleAnchor = { ...resolvePack(characterId).bubbleAnchor };
