@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Pet Lobby</title>
+  <link rel="stylesheet" href="lobby.css">
+  <script src="lobby.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Pet Lobby</h1>
+      <button id="home" class="button button-quiet" type="button">Go Home</button>
+    </header>
+
+    <section id="entry" class="panel entry" aria-label="Host or join a room">
+      <button id="host" class="button button-primary" type="button">Host Room</button>
+      <div class="entry-divider" aria-hidden="true">or</div>
+      <form id="join-form">
+        <label for="invite">Invite Code</label>
+        <div class="join-row">
+          <input id="invite" name="invite" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+          <button id="join" class="button button-secondary" type="submit">Join</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="room" hidden aria-label="Shared room">
+      <div class="scene">
+        <div class="room-window" aria-hidden="true"></div>
+        <div class="rug" aria-hidden="true"></div>
+        <div class="seats">
+          <div class="seat">
+            <div class="speech" hidden></div>
+            <div class="pet-stage">
+              <div class="empty-seat" aria-hidden="true"></div>
+              <canvas class="pet-art" width="144" height="166" hidden></canvas>
+              <span class="sparkle" aria-hidden="true" hidden>✦</span>
+            </div>
+            <div class="pet-label"></div>
+          </div>
+          <div class="seat">
+            <div class="speech" hidden></div>
+            <div class="pet-stage">
+              <div class="empty-seat" aria-hidden="true"></div>
+              <canvas class="pet-art" width="144" height="166" hidden></canvas>
+              <span class="sparkle" aria-hidden="true" hidden>✦</span>
+            </div>
+            <div class="pet-label"></div>
+          </div>
+        </div>
+      </div>
+      <div class="room-footer">
+        <p id="room-status" role="status"></p>
+        <button id="copy" class="button button-secondary" type="button">Copy Invite</button>
+      </div>
+    </section>
+    <p id="progress" role="status" hidden></p>
+    <p id="error" role="alert" hidden></p>
+    <p id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+  </main>
+</body>
+</html>

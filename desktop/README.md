@@ -41,6 +41,12 @@ A normal chat turn can save an explicit, everyday detail such as “I usually dr
 
 Correct a detail in conversation or ask the pet to forget it. In **Connection… → Memories**, inspect saved excerpts, forget one, or use **Forget all memories**. Successful removal also drops recent dialogue so the removed details don't stay in the next request as conversation history. **Forget this conversation** only clears recent dialogue. Memory storage errors appear under **Memories**. If the memory file cannot be read, chat can still reply and the file is preserved until explicitly cleared.
 
+## Lobby
+
+**Visit Lobby** opens a small room window. One Mac chooses **Host Room** and shares the invite shown in the room. A second Mac on the same network pastes it and joins. A room supports two companions and plays a shared scripted greeting for each meeting. Close the window or choose **Go Home** to return to the original desktop pet. A lost host also returns the guest home.
+
+The host listens when it creates a room, and closes the server when it leaves. Invites are intended for people sharing the local network. Room traffic carries a random pet ID, appearance, presence, and greeting state. Chat, Gemini credentials, and memory stay with the desktop companion.
+
 ## Two appearances, one companion
 
 Use the flat pet-menu choices **Dafeiyu** and **Red panda** to change appearance. Red panda is the default for a fresh install. The choice is saved separately in `companion-settings/appearance.json`; it does not reset this session’s conversation, energy, manual nap or encrypted Gemini connection. Both choices use the same app name and user-data directory. Missing or unreadable preferences use Red panda. A saved Dafeiyu selection persists.

@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen, shell, powerMonitor, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen, shell, powerMonitor, safeStorage, clipboard } = require('electron');
 const path = require('node:path');
 const { createLife } = require('./life.cjs');
 const life = createLife();
@@ -9,8 +9,9 @@ const { createCredentialStore } = require('./credential-store.cjs');
 const { resolvePack } = require('./renderer/character-pack.js');
 const { createAppearanceStore, DEFAULT_CHARACTER_ID } = require('./appearance-store.cjs');
 const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
+const { createLobbyController } = require('./lobby-controller.cjs');
 const { adjacentBounds, bubbleBounds, pointInside, fitPetBounds } = require('./window-layout.cjs');
-let credentialStore, appearanceStore, memory;
+let credentialStore, appearanceStore, memory, lobby;
 let characterId = DEFAULT_CHARACTER_ID;
 const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), getMemory: () => memory, reportMemory: ({ proposed, changed, saved }) => diagnostic(`memory edits=${proposed} changed=${changed} saved=${saved}`), keyStore: {
   load: () => credentialStore.load(), save: key => credentialStore.save(key), remove: () => credentialStore.remove(),
@@ -126,6 +127,7 @@ function updateHint(point) {
   }
 }
 function openChat() {
+  if (lobby?.isAway()) return;
   hideHint(); chatRequested = true;
   showPet();
   if (!chatReady || !petReady) return;
@@ -134,6 +136,7 @@ function openChat() {
 }
 function closeChat() { chatRequested = false; chatWindow.hide(); }
 function openConnection(fromComposer = false) {
+  if (lobby?.isAway()) return;
   hideHint(); connectionRequested = true; returnToComposer = fromComposer;
   showPet();
   if (chatReady) chatWindow.hide();
@@ -210,8 +213,10 @@ function startLife() {
   let previous = performance.now();
   lifeTimer = setInterval(() => {
     const now = performance.now();
-    life.tick((now - previous) / 1000);
+    const elapsed = (now - previous) / 1000;
     previous = now;
+    if (lobby?.isAway()) return;
+    life.tick(elapsed);
     publishLife();
   }, 250);
   cursorTimer = setInterval(() => {
@@ -236,14 +241,24 @@ function keepOnScreen(bounds) {
   return fitPetBounds(bounds, workArea, 164);
 }
 function showPet() {
-  if (!petWindow || petWindow.isDestroyed()) return;
+  if (lobby?.isAway() || !petWindow || petWindow.isDestroyed()) return;
   const position = keepOnScreen(petWindow.getBounds());
   petWindow.setPosition(position.x, position.y);
   petWindow.showInactive();
   repositionCompanions();
   syncBubbleVisibility();
 }
+function leaveDesktopForLobby() {
+  chatRequested = connectionRequested = returnToComposer = false;
+  petWindow.hide();
+  refreshAppMenu();
+}
+function returnFromLobby() {
+  showPet();
+  refreshAppMenu();
+}
 function selectAppearance(id) {
+  if (lobby?.isJoining() || lobby?.isAway()) return;
   if (!['dafeiyu', 'red-panda'].includes(id) || id === characterId) return;
   // Appearance changes never reset the pet's life, conversation or connection.
   try { appearanceStore.save(id); } catch { diagnostic('appearance preference could not be saved'); }
@@ -252,16 +267,19 @@ function selectAppearance(id) {
   positionBubble(); publishLife(); refreshAppMenu();
 }
 function menuTemplate(fixedSleepLabel = false) {
+  const atHome = !lobby?.isAway();
   return [
-    { label: 'Chat', click: openChat },
-    { label: 'Connection…', click: () => openConnection(false) },
-    { label: fixedSleepLabel ? 'Nap / Wake' : life.snapshot().activity === 'sleep' ? 'Wake' : 'Nap', click: toggleSleep },
+    { label: 'Chat', enabled: atHome, click: openChat },
+    { label: 'Connection…', enabled: atHome, click: () => openConnection(false) },
+    { label: 'Visit Lobby', click: () => lobby?.open() },
+    { label: fixedSleepLabel ? 'Nap / Wake' : life.snapshot().activity === 'sleep' ? 'Wake' : 'Nap', enabled: atHome, click: toggleSleep },
     { label: 'Eye tracking', type: 'checkbox', checked: gazeEnabled, click: () => { gazeEnabled = !gazeEnabled; publishLife(); refreshAppMenu(); } },
     { type: 'separator' },
-    { label: 'Dafeiyu', type: 'radio', checked: characterId === 'dafeiyu', click: () => selectAppearance('dafeiyu') },
-    { label: 'Red panda', type: 'radio', checked: characterId === 'red-panda', click: () => selectAppearance('red-panda') },
+    { label: 'Dafeiyu', type: 'radio', enabled: atHome, checked: characterId === 'dafeiyu', click: () => selectAppearance('dafeiyu') },
+    { label: 'Red panda', type: 'radio', enabled: atHome, checked: characterId === 'red-panda', click: () => selectAppearance('red-panda') },
     { type: 'separator' },
     { label: 'Bring back', click: () => {
+      if (lobby?.isAway()) { lobby.goHome(); return; }
       const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
       petWindow.setPosition(workArea.x + workArea.width - SIZE.width - 40, workArea.y + workArea.height - SIZE.height - 24);
       if (!petReady) { recoveryAttempts = 0; recoverPetRenderer(); }
@@ -483,6 +501,13 @@ else {
     appearanceStore = createAppearanceStore(path.join(app.getPath('userData'), 'companion-settings'));
     characterId = appearanceStore.load();
     bubbleAnchor = { ...resolvePack(characterId).bubbleAnchor };
+    lobby = createLobbyController({
+      BrowserWindow, ipcMain, clipboard, secureWindow,
+      directory: path.join(app.getPath('userData'), 'lobby-identity'),
+      getAppearance: () => characterId,
+      onDeparture: leaveDesktopForLobby,
+      onReturn: returnFromLobby
+    });
     diagnostic(`connection=${chat.getStatus().credentialState} ready=${chat.getStatus().ready}`);
     createWindow();
     createCompanionWindows();
@@ -492,6 +517,24 @@ else {
     powerMonitor.on('resume', showPet);
   });
   app.on('activate', showPet);
-  app.on('before-quit', () => { quitting = true; chatGeneration++; chat.clear(); clearTimeout(recoveryTimer); bubbles.dispose(); hideHint(); clearInterval(lifeTimer); clearInterval(cursorTimer); tray?.destroy(); });
+  let quitReady = false;
+  app.on('before-quit', event => {
+    if (quitReady) return;
+    event.preventDefault();
+    if (quitting) return;
+    quitting = true;
+    chatGeneration++;
+    chat.clear();
+    clearTimeout(recoveryTimer);
+    bubbles.dispose();
+    hideHint();
+    clearInterval(lifeTimer);
+    clearInterval(cursorTimer);
+    tray?.destroy();
+    Promise.resolve(lobby?.shutdown()).finally(() => {
+      quitReady = true;
+      app.quit();
+    });
+  });
   app.on('window-all-closed', () => app.quit());
 }

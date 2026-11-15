@@ -4,7 +4,7 @@ Nest Pet is a little companion that lives on your Mac desktop. It plays and naps
 
 This team build has ten activities, cursor attention, and an optional Gemini-powered chat. The latest update remembers your Gemini key on this Mac, shows a spinner while a reply is on its way, and keeps the input ready for another message after a reply or an error.
 
-The pet can remember everyday details from conversation across app restarts. Review or remove them under **Connection… → Memories**. A shared Lobby is planned.
+The pet can remember everyday details from conversation across app restarts. Review or remove them under **Connection… → Memories**. Two desktop pets can visit a shared Lobby on the same local network.
 
 ## Run the demo on your Mac
 
@@ -40,11 +40,18 @@ Set the key before recording. Keep it out of GitHub, screenshots and messages. C
 
 If chat gets stuck, open **◉ → Connection…** and share the displayed error or HTTP status with Evan. The pet keeps the draft when a reply fails. Press Return or use the retry button to resend it.
 
+## Try the Lobby with two Macs
+
+1. On both Macs, open **Nest Pet.app** and connect to the same Wi-Fi. Use the same branch/build on both. If you want two distinct characters, choose **Dafeiyu** on one Mac.
+2. On the first Mac choose **◉ → Visit Lobby → Host Room**. Copy the invite code and pass it to the second Mac.
+3. On the second Mac choose **◉ → Visit Lobby**, paste the code, and click **Join**. If macOS asks for local network access, allow it for Nest Pet. Both screens show the two pets and the same little greeting.
+4. On the guest Mac, click **Go Home** to bring its pet back. On the host Mac, **Go Home** closes the room and returns both pets to their desktops. Each Mac keeps its own chat memories.
+
+The greeting is scripted so you can show it without a Gemini key. If venue Wi-Fi blocks device-to-device connections, try putting both Macs on the same personal hotspot.
+
 ## Rehearse the demo
 
-1. Start on the actual Mac desktop. Let the pet play, then move your cursor nearby and show it noticing you.
-2. Send a short message and let the audience see its reply in the bubble. Record a backup of this flow before the presentation in case the network is slow.
-3. Use one visual to show where the product is going. The same pet goes from your desktop into a shared public Lobby, meets other users' pets, plays or talks with them, and comes home. Label this scene as the planned experience.
+Show the pet noticing your cursor, then have it recall a saved preference. Open the Lobby on two Macs, show both pets greeting, and return to the desktop. Record a backup of the flow in case venue networking is slow.
 
 The included character art is temporary and for private, noncommercial team testing. See the [asset credits](desktop/THIRD_PARTY_NOTICES.md).
 

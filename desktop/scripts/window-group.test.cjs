@@ -9,22 +9,25 @@ const { fitPetBounds, adjacentBounds, bubbleBounds } = require('../src/window-la
 const { DEFAULT_CHARACTER_ID } = require('../src/appearance-store.cjs');
 const primary = { id: 1, workArea: { x:0,y:25,width:1440,height:875 } };
 const secondary = { id: 2, workArea: { x:-1920,y:0,width:1920,height:1080 } };
-async function boot({ service, savedAppearance = DEFAULT_CHARACTER_ID, userData = '/synthetic-test-user-data', realAppearance = false } = {}) {
+async function boot({ service, savedAppearance = DEFAULT_CHARACTER_ID, userData = '/synthetic-test-user-data', realAppearance = false, lobbyNetwork } = {}) {
   const windows=[], timers=[], intervals=[], menu={};
+  const lobbyTimers = new Map();
+  let nextLobbyTimer = 0;
   let displays=[primary,secondary];
   class Window extends EventEmitter {
     constructor(options) {
       super(); this.options=options; this.bounds={x:0,y:0,...options}; this.visible=false; this.focuses=0;
       this.webContents=new EventEmitter();
-      Object.assign(this.webContents,{send(){},setWindowOpenHandler(){},session:{setPermissionRequestHandler(){}},reload:()=>{this.reloads=(this.reloads||0)+1;}});
+      Object.assign(this.webContents,{mainFrame:{},send(){},setWindowOpenHandler(){},session:{setPermissionRequestHandler(){}},reload:()=>{this.reloads=(this.reloads||0)+1;}});
       windows.push(this);
     }
-    isDestroyed(){return false;} getBounds(){return this.bounds;}
+    isDestroyed(){return Boolean(this.destroyed);} getBounds(){return this.bounds;}
     setBounds(b){this.bounds={...this.bounds,...b};}
     setPosition(x,y){this.bounds.x=x;this.bounds.y=y;this.emit('move');}
     showInactive(){this.visible=true;} show(){this.visible=true;} isVisible(){return this.visible;}
     hide(){const was=this.visible;this.visible=false;if(was)this.emit('hide');} focus(){this.focuses++;}
-    setIgnoreMouseEvents(){} loadFile(){} setVisibleOnAllWorkspaces(){throw new Error('must not broadcast across Spaces');}
+    destroy(){this.destroyed=true;this.visible=false;this.emit('closed');}
+    setIgnoreMouseEvents(){} async loadFile(){} setVisibleOnAllWorkspaces(){throw new Error('must not broadcast across Spaces');}
   }
   let initialize;
   const app=new EventEmitter();Object.assign(app,{requestSingleInstanceLock:()=>true,whenReady:()=>({then:fn=>{initialize=fn;}}),getPath:()=>userData,quit(){}});
@@ -36,16 +39,27 @@ async function boot({ service, savedAppearance = DEFAULT_CHARACTER_ID, userData 
   const ipc=new EventEmitter();const handlers={};ipc.handle=(name,handler)=>{handlers[name]=handler;};
   class Tray extends EventEmitter {setTitle(){}setToolTip(){}destroy(){}}
   const electron={app,BrowserWindow:Window,Menu:{buildFromTemplate:t=>({items:t,popup(){}}),setApplicationMenu:m=>{menu.current=m;}},
+    clipboard:{writeText(value){this.value=value;}},
     Tray,ipcMain:ipc,nativeImage:{createEmpty:()=>({})},screen,shell:{},powerMonitor:new EventEmitter()};
   const main=path.resolve(__dirname,'../src/main.cjs');
+  const lobby = path.resolve(__dirname, '../src/lobby-controller.cjs');
+  const lobbyModule = { exports: {} };
+  if (lobbyNetwork) {
+    vm.runInNewContext(fs.readFileSync(lobby, 'utf8'), {
+      require: name => name === './lobby-network.cjs' ? lobbyNetwork : require(name),
+      module: lobbyModule, __dirname: path.dirname(lobby), setImmediate,
+      setTimeout: fn => { lobbyTimers.set(++nextLobbyTimer, fn); return nextLobbyTimer; },
+      clearTimeout: id => lobbyTimers.delete(id)
+    }, { filename: lobby });
+  }
   vm.runInNewContext(fs.readFileSync(main,'utf8'),{
-    require:name=>name==='electron'?electron:name==='./appearance-store.cjs'&&!realAppearance?{DEFAULT_CHARACTER_ID,createAppearanceStore:()=>({load:()=>savedAppearance,save:id=>{savedAppearance=id;}})}:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
+    require:name=>name==='electron'?electron:name==='./lobby-controller.cjs'&&lobbyNetwork?lobbyModule.exports:name==='./appearance-store.cjs'&&!realAppearance?{DEFAULT_CHARACTER_ID,createAppearanceStore:()=>({load:()=>savedAppearance,save:id=>{savedAppearance=id;}})}:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
     __dirname:path.dirname(main),process:{env:{},platform:'darwin'},performance:{now:()=>0},console,
     setInterval:fn=>{intervals.push(fn);return intervals.length;},clearInterval(){},setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},Date
   },{filename:main});
   await initialize();
   windows.forEach(w=>w.webContents.emit('did-finish-load'));
-  return {windows,electron,timers,intervals,ipc,handlers,menu,savedAppearance:()=>savedAppearance,removeSecondary(){displays=[primary];screen.emit('display-removed',{},secondary);}};
+  return {windows,electron,timers,intervals,ipc,handlers,menu,lobbyTimers,savedAppearance:()=>savedAppearance,removeSecondary(){displays=[primary];screen.emit('display-removed',{},secondary);}};
 }
 
 test('only Connection can replace/remove credentials and async changes finish before returning success',async()=>{
@@ -177,4 +191,116 @@ test('actual appearance storage survives fresh main startup beside Chromium Pref
   const second=await boot({userData:dir,realAppearance:true});
   assert.equal(second.handlers['pet:initial-state']({sender:second.windows[0].webContents}).characterId,'dafeiyu');
   assert.equal(fs.readFileSync(path.join(dir,'Preferences'),'utf8'),'chromium-owned');
+});
+
+function openTestLobby(app) {
+  app.menu.current.items[0].submenu.find(entry => entry.label === 'Visit Lobby').click();
+  const window = app.windows.at(-1);
+  window.emit('ready-to-show');
+  const invoke = (channel, ...args) => app.handlers['lobby:' + channel]({
+    sender: window.webContents, senderFrame: window.webContents.mainFrame
+  }, ...args);
+  return { window, invoke };
+}
+
+function lobbyProfile(t) {
+  const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'nest-lobby-profile-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  return directory;
+}
+
+test('hosting transfers the selected pet only after acknowledgement and Go Home restores the same window', async t => {
+  const userData = lobbyProfile(t);
+  const localInvite = '127.0.0.1:5173/deadbeef1234';
+  const publicInvite = '192.168.1.10:5173/deadbeef1234';
+  let closeCount = 0;
+  const network = {
+    startLobbyServer: async () => ({ invite: publicInvite, localInvite, close: async () => { closeCount++; } }),
+    joinLobby: async (invite, { petId, appearance }) => {
+      assert.equal(invite, localInvite);
+      return { initialState: { pets: [{ id: petId, appearance, seat: 0 }], greeting: null } };
+    }
+  };
+  const app = await boot({ userData, lobbyNetwork: network, savedAppearance: 'dafeiyu' });
+  const [pet, , chat] = app.windows;
+  app.menu.current.items[0].submenu.find(entry => entry.label === 'Chat').click();
+  const { window, invoke } = openTestLobby(app);
+  const identity = invoke('snapshot').selfId;
+  assert.ok(identity);
+  assert.equal(window.options.webPreferences.sandbox, true);
+  assert.equal(app.handlers['lobby:host']({ sender: pet.webContents, senderFrame: pet.webContents.mainFrame }), null);
+  assert.equal(app.handlers['lobby:snapshot']({ sender: window.webContents, senderFrame: {} }), null);
+  const hosting = invoke('host');
+  assert.equal(invoke('snapshot').phase, 'joining');
+  assert.equal(pet.visible, true);
+  assert.equal(chat.visible, true);
+  const room = await hosting;
+  assert.equal(room.phase, 'room');
+  assert.deepEqual(room.pets, [{ id: identity, appearance: 'dafeiyu', seat: 0 }]);
+  assert.equal(pet.visible, false);
+  assert.equal(chat.visible, false);
+  app.electron.app.emit('activate');
+  assert.equal(pet.visible, false);
+  assert.equal(invoke('copy-invite'), true);
+  assert.equal(app.electron.clipboard.value, publicInvite);
+  invoke('go-home');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(window.isDestroyed(), true);
+  assert.equal(pet.visible, true);
+  assert.equal(chat.visible, false);
+  assert.equal(app.windows.length, 6);
+  assert.equal(closeCount, 1);
+  assert.equal(app.lobbyTimers.size, 0);
+
+  const restarted = await boot({ userData, lobbyNetwork: network });
+  const reopened = openTestLobby(restarted);
+  assert.equal(reopened.invoke('snapshot').selfId, identity);
+  reopened.window.destroy();
+});
+
+test('failed join preserves the desktop; closing during a later join releases the late membership', async t => {
+  let completeJoin, leaveCount = 0;
+  const network = {
+    joinLobby: invite => {
+      if (invite === 'invalid') throw new Error('Enter a valid Lobby invite.');
+      return new Promise(resolve => { completeJoin = resolve; });
+    }
+  };
+  const app = await boot({ userData: lobbyProfile(t), lobbyNetwork: network });
+  const [pet] = app.windows;
+  const { invoke, window } = openTestLobby(app);
+  const failed = await invoke('join', 'invalid');
+  assert.equal(failed.phase, 'entry');
+  assert.match(failed.error, /valid Lobby invite/);
+  assert.equal(pet.visible, true);
+  const joining = invoke('join', 'valid');
+  await Promise.resolve();
+  window.destroy();
+  completeJoin({ leave: async () => { leaveCount++; } });
+  assert.equal(await joining, null);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(pet.visible, true);
+  assert.equal(leaveCount, 1);
+  assert.equal(app.lobbyTimers.size, 0);
+});
+
+test('a losing Lobby connection closes its window and returns the original pet', async t => {
+  let leaveCount = 0;
+  const network = {
+    joinLobby: async (_invite, { petId, appearance }) => ({
+      initialState: { pets: [{ id: petId, appearance, seat: 0 }], greeting: null },
+      pulse: async () => { throw new Error('Host closed the Lobby.'); },
+      leave: async () => { leaveCount++; }
+    })
+  };
+  const app = await boot({ userData: lobbyProfile(t), lobbyNetwork: network });
+  const [pet] = app.windows;
+  const { invoke, window } = openTestLobby(app);
+  assert.equal((await invoke('join', 'invite')).phase, 'room');
+  assert.equal(pet.visible, false);
+  await [...app.lobbyTimers.values()][0]();
+  assert.equal(window.isDestroyed(), true);
+  assert.equal(pet.visible, true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(leaveCount, 1);
 });

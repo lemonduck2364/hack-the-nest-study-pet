@@ -74,7 +74,8 @@ function writeApp(staging, electronDist) {
     CFBundleShortVersionString: manifest.version,
     CFBundleVersion: manifest.version,
     CFBundleIconFile: 'NestPet.icns',
-    LSApplicationCategoryType: 'public.app-category.lifestyle'
+    LSApplicationCategoryType: 'public.app-category.lifestyle',
+    NSLocalNetworkUsageDescription: 'Join a Nest Pet room with another Mac on the same Wi-Fi.'
   };
   for (const [key, value] of Object.entries(properties)) {
     run('/usr/bin/plutil', '-replace', key, '-string', value, plist);
