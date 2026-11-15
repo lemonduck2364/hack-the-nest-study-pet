@@ -71,4 +71,4 @@ The active app is in [`desktop/`](desktop/). The team's previous browser prototy
 
 ### Appearance preview
 
-Red panda is the default for new installations. She reads, takes tea breaks, sits quietly, and curls up for sleep. Move the cursor nearby when she's awake to see her switch to a standing attention pose. Choose **Dafeiyu** from the pet menu to switch appearances. See [the desktop guide](desktop/README.md) for the supported activities.
+Red panda is the default for new installations. She reads, takes tea breaks, sits quietly, and curls up for sleep. Move the cursor nearby when she's awake to see her switch to a standing attention pose. Choose **Dafeiyu** or **Pixel panda** from the pet menu to switch appearances. Pixel panda has frame-by-frame transitions for its puzzle cube, kitten, laptop and nap, with eyes that can track the cursor during an action. See [the desktop guide](desktop/README.md) for the supported activities.

@@ -18,7 +18,7 @@ test('two clients see the same greeting, with authenticated two-seat presence', 
   assert.match(room.invite, /^(?:\d{1,3}\.){3}\d{1,3}:\d+\/[a-f0-9]{12}$/);
   assert.match(room.localInvite, /^127\.0\.0\.1:\d+\/[a-f0-9]{12}$/);
   const hostPet = makePet('red-panda');
-  const guestPet = makePet('dafeiyu');
+  const guestPet = makePet('pixel-panda');
   const anotherPet = makePet('red-panda');
 
   const [address, code] = room.localInvite.split('/');
@@ -52,7 +52,7 @@ test('two clients see the same greeting, with authenticated two-seat presence', 
   assert.deepEqual(await guest.pulse(), guest.initialState);
   assert.deepEqual(guest.initialState.pets, [
     { id: hostPet.petId, appearance: 'red-panda', seat: 0 },
-    { id: guestPet.petId, appearance: 'dafeiyu', seat: 1 }
+    { id: guestPet.petId, appearance: 'pixel-panda', seat: 1 }
   ]);
   assert.equal(guest.initialState.greeting.firstId, hostPet.petId);
   assert.equal(guest.initialState.greeting.secondId, guestPet.petId);
