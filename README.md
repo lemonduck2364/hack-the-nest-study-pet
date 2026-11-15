@@ -1,41 +1,51 @@
-# Study Pet prototype
+# Nest Pet
 
-One browser-based pet per browser profile and site origin. The yard plays immediately. The prototype uses local storage and needs no keys, dependencies, or backend.
+Nest Pet is a little companion that lives on your Mac desktop. It plays and naps on its own, notices your cursor, and can talk to you through its own speech bubble.
 
-## Run and deploy
+This team demo comes from the checkpoint before the animation and character pack changes. In the full vision, the same pet will learn how you like to be kept company and visit a public Lobby, where it can meet and interact with pets raised by other people. Long-term memory and the public Lobby are planned.
 
-Run `python3 -m http.server 8000 --bind 127.0.0.1` in this directory, then open http://127.0.0.1:8000. To deploy, serve `index.html`, `style.css`, and `pet.js` together from any static web host. A different origin starts with a fresh pet.
+## Run the demo on your Mac
 
-## Demo
+You can set it up yourself with a GitHub account and two Terminal commands.
 
-1. Leave the yard alone. The pet collects a twig, adds a roof, speaks first, and settles at home.
-2. Bring the cursor near the pet, click to chat, then drag and release it.
-3. Say “I’m starting work.” Teach “I like quiet company while I work,” reload, and say “I’m starting work” again. The pet walks over and settles. Say “take a break” to resume its routine.
-4. Visit the Lobby and return using the header button. The pet ID, shelter, and memory remain the same.
+1. **Download the project.** Sign in to GitHub with an account that has access to this private repo. Choose **Code → Download ZIP** on the repo page, or [download the demo ZIP](https://github.com/lemonduck2364/hack-the-nest-study-pet/archive/refs/heads/desktop-pet.zip). Double-click the ZIP in Finder to unpack it.
+2. **Install Node.js once.** Open [the Node.js download page](https://nodejs.org/en/download), choose **24 LTS** and the **macOS Installer**, and run it. If you already have Node.js 22.12 or newer, skip the install. Open a fresh Terminal window afterward.
+3. **Open the project folder in Terminal.** In Finder, find the **desktop** folder inside the unzipped project. In Terminal, type `cd` followed by a space. Drag the **desktop** folder into Terminal and press **Return**. You should now be in the folder containing `package.json`.
+4. **Install and start.** Run these lines one at a time. Wait for the first to finish before running the second. The first startup may download Electron, which runs the app, so stay connected to the internet.
 
-## Implementation
+   ```sh
+   npm ci
+   npm start
+   ```
 
-`pet.js` holds movement and behavior in `tick`, storage in `save` and `remember`, and replaceable scripted dialogue in `generateReply`. The twig sequence and supported chat phrases are scripted. Energy and personality affect idle behavior, energy affects cursor play, and saved memories determine where the pet naps and how it responds to the work cue.
+Look near the lower-right corner of your desktop. If you can't find the pet, choose **◉ → Bring back** from the Mac menu bar. Keep Terminal open while the pet runs. Use **◉ → Quit** to close it. Next time, open Terminal in the same **desktop** folder and run only `npm start`.
 
-## Lobby interface
+## Let the pet talk
 
-The desktop dispatches a `visitRequested` browser event with `detail: { petId }`. The integration confirms with `window.studyPet.confirmLocation(petId, "lobby")` or `window.studyPet.confirmLocation(petId, "desktop")`. Replace the button's local confirmation with Evan’s integration. The prototype starts at home on each launch. Owner conversations and learned preferences are outside the Lobby payload.
+Play, naps and cursor interactions work without an AI key. To try a live response:
 
-## AI chat
+1. Sign in to [Google AI Studio](https://aistudio.google.com/api-keys). Use **Create API key** if you don't already have a key, then copy it. [Google's setup guide](https://ai.google.dev/gemini-api/docs/api-key) covers project setup if asked.
+2. On the Mac, select **◉ → Connection…**. Paste your key in the password field, click **Set key**, and close Connection.
+3. Choose **◉ → Chat**, type a short line such as “I'm taking a little break,” and press **Return**. The response shows up in the pet's speech bubble.
 
-Install the certificate dependency with `python3 -m pip install -r requirements.txt`, then run `python3 server.py` instead of the static server. Create a key in [Google AI Studio](https://aistudio.google.com/api-keys) and put it in
-`.env` as `GEMINI_API_KEY`. Changes to the key are read on the next request.
-The default model is `gemini-3.1-flash-lite`, configurable with `GEMINI_MODEL`.
+Set the key before recording. Keep it out of GitHub, screenshots and messages. The app clears the key on restart. Chat sends the typed message and recent conversation context to Google, so use a short demo line.
 
-The server sends the latest message, up to six recent exchanges, and the pet's
-personality, energy, activity, and memories to Gemini's GenerateContent API.
-Conversation history lives in browser memory until reload. Learned preferences
-remain in local storage. Edit souls.md to change the model's personality.
-Only the supported local commands change behavior or saved preferences.
-Generated replies do not automatically add memories or invoke tools.
-Missing keys and network errors show an explicitly labeled scripted fallback.
+## Rehearse the demo
 
-The Python server serves only the three public web assets. It keeps .env private
-and binds to localhost. AI chat requires this backend; static hosting supports
-only the original offline behavior. Public hosting requires authentication and
-request limits before exposing the paid API.
+1. Start on the actual Mac desktop. Let the pet play, then move your cursor nearby and show it noticing you.
+2. Send a short message and let the audience see its reply in the bubble. Record a backup of this flow before the presentation in case the network is slow.
+3. Use one visual to show where the product is going. The same pet goes from your desktop into a shared public Lobby, meets other users' pets, plays or talks with them, and comes home. Label this scene as the planned experience.
+
+The included character art is for private, noncommercial team review. Use original or cleared art for public presentation materials. See [asset credits](desktop/THIRD_PARTY_NOTICES.md).
+
+## If you get stuck
+
+| What you see | What to try |
+| --- | --- |
+| GitHub shows 404 | Check that you're signed in and have access to the private repo. |
+| Terminal says `command not found: npm` | Install Node.js and reopen Terminal. |
+| Terminal can't find `package.json` | Repeat step 3 using the **desktop** folder inside the download. |
+| The pet is running but you can't see it | Return to a regular desktop and choose **◉ → Bring back**. |
+| The pet moves but chat doesn't reply | Check the internet connection and the key in **◉ → Connection…**. You can continue rehearsing with the pet's local interactions. |
+
+The active app is in [`desktop/`](desktop/). The team's previous browser prototype and its original instructions are preserved in [`archive/original-web-prototype/`](archive/original-web-prototype/README.md).

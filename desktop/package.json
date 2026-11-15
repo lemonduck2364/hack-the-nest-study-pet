@@ -1,0 +1,16 @@
+{
+  "name": "hackthenest-desktop-spike",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mac-first companion with autonomous life, gaze and session chat.",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.cjs && node --check src/preload.cjs && node --check src/window-layout.cjs && node --check src/life.cjs && node --check src/chat-service.cjs && node --check src/renderer/pet.js && node --check src/renderer/gaze.js && node --check src/renderer/chat.js && node --check src/renderer/hint.js && node --check src/renderer/connection.js && node --check src/renderer/bubble.js && node --check src/renderer/bubble-pages.js && node --check scripts/smoke.cjs",
+    "smoke": "ELECTRON_RUN_AS_NODE=1 electron scripts/smoke.cjs",
+    "test": "node --test scripts/*.test.cjs"
+  },
+  "devDependencies": {
+    "electron": "45.3.2"
+  }
+}
