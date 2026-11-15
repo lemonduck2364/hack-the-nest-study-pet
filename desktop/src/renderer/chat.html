@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Say something</title><link rel="stylesheet" href="chat.css"><script src="chat.js" defer></script></head>
+<body><form id="composer"><button id="close-chat" type="button" aria-label="Close input">×</button><textarea id="message" maxlength="1000" rows="2" aria-label="What’s on my mind" placeholder="What’s on my mind…"></textarea><button id="send" type="submit" aria-label="Send message" disabled>↑</button><span id="waiting" hidden aria-label="Waiting for a reply">···</span><div id="notice" hidden><span id="chat-error" role="alert"></span><button id="connect-first" type="button" hidden>Let’s connect first</button></div></form></body></html>
