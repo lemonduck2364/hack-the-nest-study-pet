@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Pet</title>
+<link rel="stylesheet" href="style.css">
+<script src="pet.js" defer></script>
+</head>
+<body>
+<main>
+<header><div><h1>Study Pet</h1><p id="status" aria-live="polite"></p></div>
+<button id="lobby" type="button">Visit Lobby</button></header>
+<section id="yard" aria-label="Pet's home">
+<div id="home" role="img" aria-label="Unfinished shelter"><span></span></div>
+<div id="twig" aria-hidden="true"></div>
+<button id="pet" type="button" aria-label="Chat with your pet"><span class="face">•ᴗ•</span><span class="carried" hidden></span></button>
+<p id="away" hidden>At the Lobby</p>
+</section>
+<p id="speech" role="status"></p>
+<p id="chat-status" role="status"></p>
+<form id="chat" hidden>
+<label for="message">Talk to your pet</label>
+<div><input id="message" maxlength="400" required autocomplete="off" placeholder="I’m starting work"><button>Send</button></div>
+</form>
+<footer><span>Click to chat · Drag to move</span><span id="identity"></span></footer>
+</main>
+</body>
+</html>
