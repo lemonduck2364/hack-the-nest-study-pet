@@ -48,11 +48,11 @@ app.whenReady().then(async () => {
     const entries = memory.snapshot().entries;
     assert.deepEqual(entries.map(({ quote }) => quote), facts);
     let calls = 0;
-    const chat = chatWith('dafeiyu', async (_url, options) => {
+    const chat = chatWith('pixel-panda', async (_url, options) => {
       const body = JSON.parse(options.body);
       const context = body.systemInstruction.parts.map(({ text: part }) => part).join('\n');
       assert.ok(facts.every(quote => context.includes(quote)));
-      assert.match(context, /"appearance":"dafeiyu"/);
+      assert.match(context, /"appearance":"pixel-panda"/);
       if (++calls === 1) {
         assert.equal(body.contents.length, 1, 'the reply uses saved memories, with no earlier chat turns');
         return reply('Mint tea for reading, and quiet company in the morning.');
