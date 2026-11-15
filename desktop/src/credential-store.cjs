@@ -19,10 +19,10 @@ function failure(code) {
   error.name = 'CredentialStoreError'; error.code = code;
   return error;
 }
-function normalizedKey(value) {
+function normalizeGeminiKey(value) {
   if (typeof value !== 'string') return null;
   const key = value.trim();
-  return key.length >= 8 && key.length <= 512 && /^[A-Za-z0-9_-]+$/.test(key)
+  return key.length >= 8 && key.length <= 512 && /^[A-Za-z0-9_.-]+$/.test(key)
     && !/^(your[-_]?key|placeholder)/i.test(key) ? key : null;
 }
 
@@ -83,7 +83,7 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
     } finally { if (handle) await handle.close().catch(() => {}); }
   }
   async function saveKey(value) {
-    const key = normalizedKey(value);
+    const key = normalizeGeminiKey(value);
     if (!key) throw failure('invalid_key');
     await requireEncryption();
     let encrypted;
@@ -123,7 +123,7 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
         await requireEncryption();
         try {
           const decoded = await safeStorage.decryptStringAsync(encrypted);
-          const key = normalizedKey(decoded?.result);
+          const key = normalizeGeminiKey(decoded?.result);
           if (!key) throw new Error('Invalid decrypted value');
           // Keep load read-only, including shouldReEncrypt:true. Explicit saves
           // use the current OS provider; a failed read never destroys the file.
@@ -143,4 +143,4 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
   };
 }
 
-module.exports = { createCredentialStore };
+module.exports = { createCredentialStore, normalizeGeminiKey };
