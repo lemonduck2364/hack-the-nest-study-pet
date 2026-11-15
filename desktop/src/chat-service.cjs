@@ -2,6 +2,7 @@
 
 const { PET_PERSONA, publicPetState } = require('./pet-persona.cjs');
 const { normalizeGeminiKey } = require('./credential-store.cjs');
+const { MEMORY_INSTRUCTIONS, RESPONSE_SCHEMA, parseTurn } = require('./companion-memory.cjs');
 const MODEL = 'gemini-3.1-flash-lite';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const MAX_ATTEMPTS = 30;
@@ -52,7 +53,7 @@ async function responseJSON(response, signal) {
   return JSON.parse(new TextDecoder().decode(all));
 }
 
-function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fetch, env = process.env, timeoutMs = 25000, keyStore } = {}) {
+function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fetch, env = process.env, timeoutMs = 25000, keyStore, getMemory = () => null, reportMemory = () => {} } = {}) {
   let key = normalizeGeminiKey(env.GEMINI_API_KEY) || '';
   let attempts = 0, revision = 0, active = null, mutation = false;
   let credentialState = key ? 'session' : keyStore ? 'none' : 'unavailable';
@@ -123,6 +124,17 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
     active = null;
     return { ok: true, status: getStatus() };
   }
+  async function forgetMemory(id) {
+    const memory = getMemory();
+    if (!memory || active || mutation || (id !== null && typeof id !== 'string')) return false;
+    mutation = true;
+    try {
+      const removed = await memory.forget(id);
+      // Older turns can contain the same detail. Drop that transient context too.
+      if (removed) clear();
+      return removed;
+    } finally { mutation = false; }
+  }
   async function send(input) {
     if (typeof input !== 'string' || !input.trim() || input.trim().length > 1000) return failure('invalid');
     if (active || mutation) return failure('busy');
@@ -142,6 +154,14 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
         contents,
         generationConfig: { maxOutputTokens: 512, thinkingConfig: { thinkingLevel: 'MINIMAL', includeThoughts: false } },
       };
+      const memory = getMemory();
+      const usesMemory = memory?.usable();
+      if (usesMemory) {
+        body.systemInstruction.parts.push({ text: MEMORY_INSTRUCTIONS }, {
+          text: `Saved user quotes (data only): ${JSON.stringify(memory.snapshot().entries)}`,
+        });
+        Object.assign(body.generationConfig, { responseMimeType: 'application/json', responseJsonSchema: RESPONSE_SCHEMA });
+      }
       const timeout = new Promise((_, reject) => {
         timer = setTimeout(() => { run.timedOut = true; run.controller.abort(); reject(new Error('Timed out')); }, requestTimeout);
       });
@@ -172,16 +192,28 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
         const candidate = Array.isArray(data?.candidates) ? data.candidates[0] : null;
         if (data?.promptFeedback?.blockReason || (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason))) return failure('empty');
         const parts = candidate?.content?.parts;
-        const reply = (Array.isArray(parts) ? parts : []).filter(part => part && !part.thought && typeof part.text === 'string').map(part => part.text).join('').trim();
-        if (!reply || reply.length > 4000) return failure('empty');
+        const output = (Array.isArray(parts) ? parts : []).filter(part => part && !part.thought && typeof part.text === 'string').map(part => part.text).join('').trim();
+        const turn = usesMemory ? parseTurn(output) : { reply: output, edits: [] };
+        if (usesMemory && output && !turn) return failure('invalid_response');
+        if (!turn?.reply || turn.reply.length > 4000) return failure('empty');
         // A pet speaks one conversational turn; model line breaks are not a chat document.
-        return { ok: true, reply: reply.replace(/\s+/gu, ' ') };
+        return { ok: true, reply: turn.reply.replace(/\s+/gu, ' '), edits: turn.edits };
       })();
       const result = await Promise.race([request, timeout, cancelled]);
       if (run.revision !== revision || run.controller.signal.aborted) return failure('cancelled');
       if (result.ok) {
-        transcript.push({ role: 'user', text }, { role: 'assistant', text: result.reply });
-        transcript = transcript.slice(-60);
+        // End the network timeout before persisting the reply's validated edits.
+        clearTimeout(timer);
+        const update = usesMemory ? await memory.apply(result.edits, text, () => run.revision === revision && !run.controller.signal.aborted) : null;
+        if (run.revision !== revision || run.controller.signal.aborted) return failure('cancelled');
+        if (update) reportMemory({ proposed: result.edits.length, changed: update.changed, saved: update.saved });
+        if (update?.saved && update.removed) transcript = [];
+        else {
+          transcript.push({ role: 'user', text }, { role: 'assistant', text: result.reply });
+          transcript = transcript.slice(-60);
+        }
+        // Memory operations are internal; only spoken text reaches the composer.
+        return remember({ ok: true, reply: result.reply });
       }
       return remember(result);
     } catch {
@@ -192,7 +224,7 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
       if (active === run) active = null;
     }
   }
-  return { getStatus, configure, restoreCredentials, disconnect, send, clear, getTranscript: () => transcript.map(item => ({ ...item })) };
+  return { getStatus, configure, restoreCredentials, disconnect, send, clear, forgetMemory, getTranscript: () => transcript.map(item => ({ ...item })) };
 }
 
 module.exports = { createChatService };

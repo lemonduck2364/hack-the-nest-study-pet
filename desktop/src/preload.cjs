@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('desktopPet', {
   disconnectChat: () => ipcRenderer.invoke('chat:disconnect'),
   sendChat: text => ipcRenderer.invoke('chat:send', text),
   clearChat: () => ipcRenderer.send('chat:clear'),
+  forgetMemory: id => ipcRenderer.invoke('chat:forget-memory', id),
   keyHelp: () => ipcRenderer.send('chat:key-help'),
   onChatState: callback => {
     const listener = (_event, state) => callback(state);

@@ -28,9 +28,9 @@ function normalizeGeminiKey(value) {
 
 // Call after Electron app.ready. Only OS-encrypted bytes reach the filesystem.
 // The optional fs argument is a node:fs/promises-compatible adapter for testing.
-function createCredentialStore({ directory, safeStorage, fs = defaultFS, platform = process.platform } = {}) {
+function createEncryptedTextStore({ directory, safeStorage, fs = defaultFS, platform = process.platform }, filenameLeaf, normalize) {
   if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw failure('unavailable');
-  const filename = path.join(directory, 'gemini.enc');
+  const filename = path.join(directory, filenameLeaf);
   let queue = Promise.resolve();
   function serialize(operation) {
     const result = queue.then(operation);
@@ -82,15 +82,15 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
       throw failure('read_failed');
     } finally { if (handle) await handle.close().catch(() => {}); }
   }
-  async function saveKey(value) {
-    const key = normalizeGeminiKey(value);
-    if (!key) throw failure('invalid_key');
+  async function saveText(value) {
+    const text = normalize(value);
+    if (text === null) throw failure('invalid_key');
     await requireEncryption();
     let encrypted;
     try {
-      encrypted = await safeStorage.encryptStringAsync(key);
+      encrypted = await safeStorage.encryptStringAsync(text);
       if (!Buffer.isBuffer(encrypted) || encrypted.length < 1 || encrypted.length > MAX_FILE_BYTES
-        || encrypted.includes(Buffer.from(key, 'utf8'))) throw new Error('Invalid ciphertext');
+        || encrypted.includes(Buffer.from(text, 'utf8'))) throw new Error('Invalid ciphertext');
     } catch { throw failure('write_failed'); }
 
     let temporary, handle, created = false;
@@ -98,7 +98,7 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
       if (!await existingDirectory()) await fs.mkdir(directory, { recursive: true, mode: 0o700 });
       if (!await existingDirectory()) throw new Error('Missing directory');
       await fs.chmod(directory, 0o700);
-      temporary = path.join(directory, `.gemini-${randomUUID()}.tmp`);
+      temporary = path.join(directory, `.${filenameLeaf}-${randomUUID()}.tmp`);
       handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
       created = true;
       await handle.chmod(0o600);
@@ -123,15 +123,15 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
         await requireEncryption();
         try {
           const decoded = await safeStorage.decryptStringAsync(encrypted);
-          const key = normalizeGeminiKey(decoded?.result);
-          if (!key) throw new Error('Invalid decrypted value');
+          const text = normalize(decoded?.result);
+          if (text === null) throw new Error('Invalid decrypted value');
           // Keep load read-only, including shouldReEncrypt:true. Explicit saves
           // use the current OS provider; a failed read never destroys the file.
-          return key;
+          return text;
         } catch { throw failure('decrypt_failed'); }
       });
     },
-    save(value) { return serialize(() => saveKey(value)); },
+    save(value) { return serialize(() => saveText(value)); },
     remove() {
       return serialize(async () => {
         try {
@@ -143,4 +143,8 @@ function createCredentialStore({ directory, safeStorage, fs = defaultFS, platfor
   };
 }
 
-module.exports = { createCredentialStore, normalizeGeminiKey };
+function createCredentialStore(options = {}) {
+  return createEncryptedTextStore(options, 'gemini.enc', normalizeGeminiKey);
+}
+
+module.exports = { createCredentialStore, normalizeGeminiKey, createEncryptedTextStore };
