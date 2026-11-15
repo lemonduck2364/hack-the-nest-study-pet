@@ -59,3 +59,8 @@ The included character art is temporary and for private, noncommercial team test
 | The pet moves but chat doesn't reply | Check the internet connection and the key in **◉ → Connection…**. You can continue rehearsing with the pet's local interactions. |
 
 The active app is in [`desktop/`](desktop/). The team's previous browser prototype and its original instructions are preserved in [`archive/original-web-prototype/`](archive/original-web-prototype/README.md).
+
+
+### Appearance preview
+
+The desktop pet menu offers **Dafeiyu** and **Red panda**. Both share the same pet state, conversation and saved Gemini connection. Red panda is a first pass using Andrew’s original still art: quiet reading, gentle proximity gaze and a tea pose, with the book pose used for unsupported activities and rest. It is not a full authored animation set. See `desktop/README.md` for the supported behaviors and limitations.

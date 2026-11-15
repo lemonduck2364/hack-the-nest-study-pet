@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "source": "Andrew/team-provided artwork supplied by Evan in the project workspace",
+  "originalFilename": "sprite pet_2.png",
+  "file": "andrew-original.png",
+  "bytes": 1802503,
+  "sha256": "dc3c0fb92a2b07bf2acd4b8895f6cd440c23bdecf4f145bff60b8b4845466537",
+  "dimensions": {
+    "width": 2172,
+    "height": 724
+  },
+  "format": "RGBA PNG",
+  "poses": [
+    "wave",
+    "book",
+    "tea"
+  ],
+  "modifications": "None. Exact original bytes copied unchanged; runtime source rectangles are described separately in geometry.json.",
+  "license": "No explicit license document was supplied with this file. Do not infer an open-source license or public redistribution grant.",
+  "scope": "User-requested local project integration; authorship/ownership is based on the user describing Andrew/team-provided art, not an independent rights audit.",
+  "limitations": [
+    "Three static poses, not an animation sheet with temporal frames.",
+    "Book pose does not contain an authored page-turn or look-up animation.",
+    "No sleeping pose or authored blink sequence is supplied."
+  ]
+}

@@ -2,7 +2,7 @@
 const bridge = window.desktopPet;
 const geometry = window.PetGaze;
 const packs = window.PetCharacterPacks;
-const pack = packs.dafeiyu;
+let pack = packs.dafeiyu;
 const pet = document.getElementById('pet');
 const canvas = document.getElementById('character-frame');
 const context = canvas.getContext('2d');
@@ -14,7 +14,7 @@ alphaCanvas.width = 160; alphaCanvas.height = 90;
 const alphaContext = alphaCanvas.getContext('2d', { willReadFrequently: true });
 Object.assign(canvas.style, Object.fromEntries(Object.entries(pack.display).map(([key, value]) => [key, `${value}px`])));
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const reactionGate = window.PetCursorReaction.createReactionGate();
+let reactionGate = window.PetCursorReaction.createReactionGate();
 let life = { activity: 'idle', play: 'cube', energy: 80, gazeEnabled: true };
 let gesture, lastPointer = null, pointerInside = false, alphaPixels = null;
 let lastCaption = '', lastCaptionKind = '';
@@ -24,6 +24,7 @@ let lastFrame = 0, visibleClip = '', visibleTime = 0, hasVideoFrame = false;
 let motionPending = false;
 let lastRaw = null, lastRawTime = -1, lastRawClip = '';
 const reportedAlpha = new Set();
+let actorVersion = 0, player;
 function report(kind, clip = visibleClip || pack.initial, extra = {}) {
   if (life.debug) bridge.diagnostic({ kind, clip, ...extra });
 }
@@ -48,15 +49,15 @@ function present(source, clip) {
       if (opaque < 20) return false;
       lastRaw = frame; lastRawTime = playbackTime; lastRawClip = clip;
     }
-    // Ordinary activities and authored reaction clips are shown unchanged.
-    // Cursor interaction switches modes; it never deforms eyes on an action.
+    // Dafeiyu actions remain unchanged. The static red-panda book pose uses a
+    // gentle procedural downward gaze, easing toward the cursor in attention.
     if (clip !== visibleClip) {
       const display = pack.clips[clip]?.display || pack.display;
       Object.assign(canvas.style, Object.fromEntries(Object.entries(display).map(([key, value]) => [key, `${value}px`])));
     }
-    if (pack.clips[clip]?.look) {
-      // Only the dedicated front-facing attention pose follows eyes.
-      // Normal action clips never pass through this deformation path.
+    if (pack.clips[clip]?.look || pack.clips[clip]?.restingEyes) {
+      // Cursor following belongs to attention; restingEyes only provides the
+      // book pose's subtle downward gaze, never a different body or face.
       const looking = new ImageData(new Uint8ClampedArray(lastRaw.data), pack.width, pack.height);
       geometry.warpEyes(lastRaw.data, looking.data, pack.width, pack.height, lookGaze, pack.defaultEyeRegions);
       context.putImageData(looking, 0, 0);
@@ -72,28 +73,65 @@ function present(source, clip) {
     return true;
   } catch { return false; }
 }
-const player = window.PetAnimation.createPlayer({
-  pack, nextClip: packs.nextClip, present, report,
-  makeVideo() {
-    const video = document.createElement('video');
-    video.muted = true; video.playsInline = true; video.preload = 'auto';
-    video.setAttribute('aria-hidden', 'true'); video.className = 'decode-buffer';
-    if (video.requestVideoFrameCallback) {
-      const decoded = (_now, metadata) => { video.decodedTime = metadata.mediaTime; video.requestVideoFrameCallback(decoded); };
-      video.requestVideoFrameCallback(decoded);
+function createActor() {
+  const version = ++actorVersion;
+  const configuration = {
+    pack, nextClip: packs.nextClip,
+    present: (source, clip) => version === actorVersion && present(source, clip),
+    report: (kind, clip, extra) => { if (version === actorVersion) report(kind, clip, extra); },
+    makeImage: () => new Image(),
+    makeCanvas: () => document.createElement('canvas'),
+    makeVideo() {
+      const video = document.createElement('video');
+      video.muted = true; video.playsInline = true; video.preload = 'auto';
+      video.setAttribute('aria-hidden', 'true'); video.className = 'decode-buffer';
+      let disposed = false, callback;
+      if (video.requestVideoFrameCallback) {
+        const decoded = (_now, metadata) => {
+          if (disposed) return;
+          video.decodedTime = metadata.mediaTime; callback = video.requestVideoFrameCallback(decoded);
+        };
+        callback = video.requestVideoFrameCallback(decoded);
+      }
+      video.disposeFrameCallbacks = () => { disposed = true; if (callback !== undefined) video.cancelVideoFrameCallback?.(callback); };
+      document.body.appendChild(video); return video;
     }
-    document.body.appendChild(video); return video;
-  }
-});
-const poster = new Image();
-poster.onload = () => {
-  if (hasVideoFrame) return;
-  context.clearRect(0, 0, pack.width, pack.height); context.drawImage(poster, 0, 0, pack.width, pack.height); readAlpha();
-};
-poster.src = pack.poster;
+  };
+  const actor = pack.kind === 'sprite' ? window.PetSprite.createPlayer(configuration) : window.PetAnimation.createPlayer(configuration);
+  const start = actor.start.bind(actor);
+  let started = false;
+  actor.start = () => {
+    if (started || version !== actorVersion) return;
+    started = true;
+    if (pack.poster) {
+    const poster = new Image();
+    poster.onload = () => {
+      if (version !== actorVersion || hasVideoFrame) return;
+      context.clearRect(0, 0, pack.width, pack.height); context.drawImage(poster, 0, 0, pack.width, pack.height); readAlpha();
+    };
+    poster.src = pack.poster;
+    }
+    start();
+  };
+  return actor;
+}
+function selectCharacter(id) {
+  const selected = packs.resolvePack(id);
+  if (selected.id === pack.id) return;
+  player.dispose?.();
+  pack = selected;
+  lastRaw = null; lastRawTime = -1; lastRawClip = ''; visibleClip = ''; hasVideoFrame = false;
+  reportedAlpha.clear(); lastCaption = lastCaptionKind = lastCaptionAnchor = '';
+  lookGaze = { ...(pack.restingGaze || { x: 0, y: 0 }) };
+  reactionGate = window.PetCursorReaction.createReactionGate();
+  player = createActor();
+  syncFreeze(); player.request(packs.activityClip(pack, life), { immediate: Boolean(life.manualNap) }); player.start();
+}
+player = createActor();
 function syncFreeze() {
-  if (gesture || reducedMotion.matches) player.cancelReaction();
-  player.freeze(Boolean(gesture) || reducedMotion.matches, !gesture && reducedMotion.matches);
+  const held = Boolean(gesture || life.held);
+  if (held || reducedMotion.matches) player.cancelReaction();
+  player.freeze(held || reducedMotion.matches, !held && reducedMotion.matches);
 }
 function updateHitTest(x, y) {
   let next = Boolean(document.elementFromPoint(x, y)?.closest('#pet'));
@@ -118,8 +156,9 @@ function renderCaption() {
 function renderLife(next) {
   if (!next || !['idle', 'play', 'rest', 'sleep'].includes(next.activity)) return;
   life = next; document.body.dataset.activity = next.activity;
+  selectCharacter(next.characterId);
   if (!next.gazeEnabled || next.cursorPlayAllowed === false || next.activity === 'sleep' || next.manualNap) player.cancelReaction();
-  player.request(packs.activityClip(pack, next), { immediate: Boolean(next.manualNap) }); syncFreeze(); renderCaption();
+  player.request(packs.activityClip(pack, next), { immediate: Boolean(next.manualNap) }); syncFreeze(); player.start(); renderCaption();
 }
 function frameGeometry() {
   const rect = canvas.getBoundingClientRect(), sx = rect.width / pack.width, sy = rect.height / pack.height;
@@ -131,13 +170,14 @@ function animate(now) {
   const dt = Math.min(50, Math.max(0, now - lastFrame));
   const { bounds, focus } = frameGeometry();
   const before = player.inspect();
-  const sleeping = life.activity === 'sleep' || Boolean(life.manualNap) || [pack.sleep.enter, pack.sleep.loop, pack.sleep.exit].includes(before.active);
+  const sleeping = life.activity === 'sleep' || Boolean(life.manualNap) || [pack.sleep?.enter, pack.sleep?.loop, pack.sleep?.exit].filter(Boolean).includes(before.active);
   const busy = Boolean(before.reaction || before.reactionPending);
-  const lookTarget = geometry.gazeTarget(lastPointer, bounds, before.reaction === 'attention-look', focus);
-  const ease = 1 - Math.exp(-dt / 90);
+  const lookTarget = before.reaction === 'attention-look'
+    ? geometry.gazeTarget(lastPointer, bounds, true, focus) : (pack.restingGaze || { x: 0, y: 0 });
+  const ease = reducedMotion.matches ? 1 : 1 - Math.exp(-dt / (pack.attentionEaseMs || 90));
   lookGaze.x += (lookTarget.x - lookGaze.x) * ease; lookGaze.y += (lookTarget.y - lookGaze.y) * ease;
   const nearby = reactionGate.update({ ratio: geometry.normalizedDistance(lastPointer, bounds, focus),
-    allowed: Boolean(before.active) && life.gazeEnabled && life.cursorPlayAllowed !== false, held: Boolean(gesture), sleeping,
+    allowed: Boolean(before.active) && life.gazeEnabled && life.cursorPlayAllowed !== false, held: Boolean(gesture || life.held), sleeping,
     reducedMotion: reducedMotion.matches, milliseconds: dt });
   if (nearby && !busy) player.react(pack.reactions[0]);
   else if (!nearby && busy) player.cancelReaction();
@@ -150,14 +190,15 @@ function animate(now) {
   lastFrame = now; requestAnimationFrame(animate);
 }
 reducedMotion.addEventListener('change', syncFreeze);
-bridge.onLife(renderLife);
+let liveStateSeen = false;
+bridge.onLife(state => { liveStateSeen = true; renderLife(state); });
 bridge.onCursor(point => { if (Number.isFinite(point?.x) && Number.isFinite(point?.y)) lastPointer = point; });
-bridge.initialState().then(renderLife);
+bridge.initialState().then(state => { if (!liveStateSeen) renderLife(state); }).catch(() => { if (!liveStateSeen) player.start(); });
 document.addEventListener('mousemove', event => { lastPointer = { x: event.clientX, y: event.clientY }; if (!gesture) updateHitTest(lastPointer.x, lastPointer.y); });
 document.addEventListener('mouseleave', () => {
   if (!gesture && pointerInside) { pointerInside = false; bridge.setPointerInside(false); }
 });
-syncFreeze(); player.start(); requestAnimationFrame(animate);
+syncFreeze(); requestAnimationFrame(animate);
 pet.addEventListener('pointerdown', event => {
   if (event.button !== 0 || gesture) return;
   event.preventDefault(); pet.setPointerCapture(event.pointerId);
