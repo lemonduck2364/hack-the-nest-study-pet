@@ -2,7 +2,7 @@
 const bridge = window.desktopPet;
 const geometry = window.PetGaze;
 const packs = window.PetCharacterPacks;
-let pack = packs.dafeiyu;
+let pack = packs.redPanda;
 const pet = document.getElementById('pet');
 const canvas = document.getElementById('character-frame');
 const context = canvas.getContext('2d');
@@ -35,6 +35,7 @@ function readAlpha() {
 }
 function present(source, clip) {
   try {
+    const definition = pack.clips[clip];
     const playbackTime = source.currentTime ?? 0;
     // Background decode buffers may not receive every compositor callback.
     // Never let a stale callback freeze the canvas or select an old eye pose.
@@ -49,17 +50,26 @@ function present(source, clip) {
       if (opaque < 20) return false;
       lastRaw = frame; lastRawTime = playbackTime; lastRawClip = clip;
     }
-    // Dafeiyu actions remain unchanged. The static red-panda book pose uses a
-    // gentle procedural downward gaze, easing toward the cursor in attention.
     if (clip !== visibleClip) {
-      const display = pack.clips[clip]?.display || pack.display;
+      const display = definition?.display || pack.display;
       Object.assign(canvas.style, Object.fromEntries(Object.entries(display).map(([key, value]) => [key, `${value}px`])));
     }
-    if (pack.clips[clip]?.look || pack.clips[clip]?.restingEyes) {
-      // Cursor following belongs to attention; restingEyes only provides the
-      // book pose's subtle downward gaze, never a different body or face.
+    if (definition?.look || definition?.restingEyes) {
       const looking = new ImageData(new Uint8ClampedArray(lastRaw.data), pack.width, pack.height);
-      geometry.warpEyes(lastRaw.data, looking.data, pack.width, pack.height, lookGaze, pack.defaultEyeRegions);
+      const gaze = definition.look ? lookGaze : pack.restingGaze;
+      const regions = definition.eyeRegions || pack.defaultEyeRegions;
+      geometry.warpEyes(lastRaw.data, looking.data, pack.width, pack.height, gaze, regions);
+      if (pack.kind === 'sprite') {
+        // The sprite's authored transparency controls desktop click-through.
+        for (const { x, y, width, height } of regions) {
+          for (let row = y; row < y + height; row++) {
+            for (let column = x; column < x + width; column++) {
+              const index = (row * pack.width + column) * 4 + 3;
+              looking.data[index] = lastRaw.data[index];
+            }
+          }
+        }
+      }
       context.putImageData(looking, 0, 0);
     } else context.putImageData(lastRaw, 0, 0);
     visibleClip = clip; visibleTime = time; hasVideoFrame = true;
@@ -122,7 +132,7 @@ function selectCharacter(id) {
   pack = selected;
   lastRaw = null; lastRawTime = -1; lastRawClip = ''; visibleClip = ''; hasVideoFrame = false;
   reportedAlpha.clear(); lastCaption = lastCaptionKind = lastCaptionAnchor = '';
-  lookGaze = { ...(pack.restingGaze || { x: 0, y: 0 }) };
+  lookGaze = { x: 0, y: 0 };
   reactionGate = window.PetCursorReaction.createReactionGate();
   player = createActor();
   syncFreeze(); player.request(packs.activityClip(pack, life), { immediate: Boolean(life.manualNap) }); player.start();
@@ -160,23 +170,26 @@ function renderLife(next) {
   if (!next.gazeEnabled || next.cursorPlayAllowed === false || next.activity === 'sleep' || next.manualNap) player.cancelReaction();
   player.request(packs.activityClip(pack, next), { immediate: Boolean(next.manualNap) }); syncFreeze(); player.start(); renderCaption();
 }
-function frameGeometry() {
+function frameGeometry(clip) {
   const rect = canvas.getBoundingClientRect(), sx = rect.width / pack.width, sy = rect.height / pack.height;
-  const bounds = pack.bounds, face = pack.face;
+  const bounds = pack.clips[clip]?.bounds || pack.bounds;
+  const face = pack.clips[clip]?.face || pack.face;
   return { bounds: { x: rect.x + bounds.x * sx, y: rect.y + bounds.y * sy, width: bounds.width * sx, height: bounds.height * sy },
     focus: { x: rect.x + face.x * sx, y: rect.y + face.y * sy } };
 }
 function animate(now) {
   const dt = Math.min(50, Math.max(0, now - lastFrame));
-  const { bounds, focus } = frameGeometry();
+  const proximity = frameGeometry();
   const before = player.inspect();
   const sleeping = life.activity === 'sleep' || Boolean(life.manualNap) || [pack.sleep?.enter, pack.sleep?.loop, pack.sleep?.exit].filter(Boolean).includes(before.active);
   const busy = Boolean(before.reaction || before.reactionPending);
-  const lookTarget = before.reaction === 'attention-look'
-    ? geometry.gazeTarget(lastPointer, bounds, true, focus) : (pack.restingGaze || { x: 0, y: 0 });
+  const looking = pack.clips[visibleClip]?.look;
+  const gazeFrame = looking ? frameGeometry(visibleClip) : proximity;
+  const lookTarget = looking
+    ? geometry.gazeTarget(lastPointer, gazeFrame.bounds, true, gazeFrame.focus) : { x: 0, y: 0 };
   const ease = reducedMotion.matches ? 1 : 1 - Math.exp(-dt / (pack.attentionEaseMs || 90));
   lookGaze.x += (lookTarget.x - lookGaze.x) * ease; lookGaze.y += (lookTarget.y - lookGaze.y) * ease;
-  const nearby = reactionGate.update({ ratio: geometry.normalizedDistance(lastPointer, bounds, focus),
+  const nearby = reactionGate.update({ ratio: geometry.normalizedDistance(lastPointer, proximity.bounds, proximity.focus),
     allowed: Boolean(before.active) && life.gazeEnabled && life.cursorPlayAllowed !== false, held: Boolean(gesture || life.held), sleeping,
     reducedMotion: reducedMotion.matches, milliseconds: dt });
   if (nearby && !busy) player.react(pack.reactions[0]);

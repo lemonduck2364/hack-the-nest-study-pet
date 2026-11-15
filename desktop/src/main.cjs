@@ -6,11 +6,11 @@ const life = createLife();
 const { createChatService } = require('./chat-service.cjs');
 const { createCredentialStore } = require('./credential-store.cjs');
 const { resolvePack } = require('./renderer/character-pack.js');
-const { createAppearanceStore } = require('./appearance-store.cjs');
+const { createAppearanceStore, DEFAULT_CHARACTER_ID } = require('./appearance-store.cjs');
 const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
 const { adjacentBounds, bubbleBounds, pointInside, fitPetBounds } = require('./window-layout.cjs');
 let credentialStore, appearanceStore;
-let characterId = 'dafeiyu';
+let characterId = DEFAULT_CHARACTER_ID;
 const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), keyStore: {
   load: () => credentialStore.load(), save: key => credentialStore.save(key), remove: () => credentialStore.remove(),
 } });

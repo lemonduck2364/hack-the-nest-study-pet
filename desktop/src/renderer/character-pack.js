@@ -45,9 +45,21 @@
   dafeiyu.clips['react-jump-grab'].display = { left: -40, top: 0, width: 300, height: 168.75 };
   dafeiyu.clips['react-jump-grab'].bubbleAnchor = { x: 105, y: 43 };
   dafeiyu.clips['attention-look'] = { source: 'assets/dafeiyu/idle.webm', look: true };
+  const pandaActions = {
+    reading: { clip: 'reading', description: 'quietly reading a book', caption: 'just one more page…' },
+    tea: { clip: 'tea', description: 'holding a warm cup of tea', caption: 'a warm little tea break' },
+    rest: { clip: 'quiet-rest', description: 'sitting quietly with her eyes closed', caption: 'a quiet moment…' }
+  };
+  // Translate the shared life engine's action slots into poses this skin can show.
+  const pandaPlay = {
+    cube: pandaActions.reading, cat: pandaActions.tea, 'work-laptop': pandaActions.reading,
+    'work-files': pandaActions.reading, eat: pandaActions.tea, 'clean-table': pandaActions.rest,
+    stretch: pandaActions.rest, violin: pandaActions.rest, 'brush-teeth': pandaActions.tea,
+    default: pandaActions.reading
+  };
   const redPanda = {
     id: 'red-panda', kind: 'sprite', width: 640, height: 360,
-    atlas: 'assets/red-panda/andrew-original.png', initial: 'reading',
+    atlas: 'assets/red-panda/life-atlas.png', initial: 'reading',
     bounds: { x: 203.886047, y: 63, width: 232.227907, height: 267 },
     face: { x: 320.75, y: 172.25 },
     defaultEyeRegions: [{ x: 290, y: 164, width: 18, height: 19, maxX: 3, maxY: 2 }, { x: 333, y: 161, width: 19, height: 20, maxX: 3, maxY: 2 }],
@@ -58,30 +70,36 @@
     sprites: {
       wave: { crop: [62, 8, 600, 708], destination: [206.864407, 63, 226.271186, 267] },
       book: { crop: [785, 68, 561, 645], destination: [203.886047, 63, 232.227907, 267] },
-      tea: { crop: [1478, 7, 626, 713], destination: [202.789621, 63, 234.420757, 267] }
+      tea: { crop: [1478, 7, 626, 713], destination: [202.789621, 63, 234.420757, 267] },
+      quiet: { crop: [0, 724, 541, 688], destination: [215.023983, 63, 209.952035, 267] },
+      curled: { crop: [541, 724, 738, 508], destination: [176.797965, 132.854651, 286.404070, 197.145349] }
     },
     clips: {
       reading: { sprite: 'book', restingEyes: true },
       tea: { sprite: 'tea' },
-      greeting: { sprite: 'wave' },
-      'rest-book': { sprite: 'book', restingEyes: true, fallback: true },
-      'sleep-book': { sprite: 'book', restingEyes: true, fallback: true },
-      'attention-look': { sprite: 'book', look: true }
+      'quiet-rest': { sprite: 'quiet', face: { x: 309, y: 172 } },
+      sleep: { sprite: 'curled', bubbleAnchor: { x: 110, y: 101 } },
+      'attention-look': {
+        sprite: 'wave', look: true, face: { x: 306.5, y: 148 },
+        eyeRegions: [
+          { x: 273, y: 133, width: 25, height: 22, maxX: 3, maxY: 2.5, flatCore: .4 },
+          { x: 314, y: 141, width: 26, height: 22, maxX: 3, maxY: 2.5, flatCore: .4 }
+        ]
+      }
     },
-    activities: { idle: 'reading', rest: 'rest-book', sleep: 'sleep-book', play: { eat: 'tea', default: 'reading' } },
-    sleep: { loop: 'sleep-book' },
-    selfActions: {
-      reading: { clip: 'reading', description: 'quietly reading a book', caption: 'just one more page…' },
-      tea: { clip: 'tea', description: 'enjoying a warm cup of tea', caption: 'a warm little tea break' }
+    activities: {
+      idle: 'reading', rest: 'quiet-rest', sleep: 'sleep',
+      play: Object.fromEntries(Object.entries(pandaPlay).map(([id, action]) => [id, action.clip]))
     },
-    actionDescriptions: { idle: 'quietly reading a book', rest: 'resting quietly with a book', sleep: 'resting quietly with a book',
-      play: { eat: 'enjoying a warm cup of tea', default: 'quietly reading a book' } },
+    sleep: { loop: 'sleep' },
+    selfActions: pandaActions,
+    actionDescriptions: {
+      idle: pandaActions.reading.description, rest: pandaActions.rest.description, sleep: 'curled up asleep on her tail',
+      play: Object.fromEntries(Object.entries(pandaPlay).map(([id, action]) => [id, action.description]))
+    },
     captions: {
-      reading: { kind: 'action', text: 'just one more page…' },
-      tea: { kind: 'action', text: 'a warm little tea break' },
-      greeting: { kind: 'thought', text: 'oh, hello!' },
-      'rest-book': { kind: 'action', text: 'resting with my book…' },
-      'sleep-book': { kind: 'action', text: 'a quiet rest with my book…' },
+      ...Object.fromEntries(Object.values(pandaActions).map(action => [action.clip, { kind: 'action', text: action.caption }])),
+      sleep: { kind: 'action', text: 'curled up for a nap…' },
       'attention-look': { kind: 'thought', text: 'hmm? hello there…' }
     },
     reactions: [{ clip: 'attention-look', still: true, sustained: true }]

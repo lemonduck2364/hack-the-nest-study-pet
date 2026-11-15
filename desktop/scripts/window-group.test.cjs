@@ -6,9 +6,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { fitPetBounds, adjacentBounds, bubbleBounds } = require('../src/window-layout.cjs');
+const { DEFAULT_CHARACTER_ID } = require('../src/appearance-store.cjs');
 const primary = { id: 1, workArea: { x:0,y:25,width:1440,height:875 } };
 const secondary = { id: 2, workArea: { x:-1920,y:0,width:1920,height:1080 } };
-async function boot({ service, savedAppearance = 'dafeiyu', userData = '/synthetic-test-user-data', realAppearance = false } = {}) {
+async function boot({ service, savedAppearance = DEFAULT_CHARACTER_ID, userData = '/synthetic-test-user-data', realAppearance = false } = {}) {
   const windows=[], timers=[], intervals=[], menu={};
   let displays=[primary,secondary];
   class Window extends EventEmitter {
@@ -37,7 +38,7 @@ async function boot({ service, savedAppearance = 'dafeiyu', userData = '/synthet
     Tray,ipcMain:ipc,nativeImage:{createEmpty:()=>({})},screen,shell:{},powerMonitor:new EventEmitter()};
   const main=path.resolve(__dirname,'../src/main.cjs');
   vm.runInNewContext(fs.readFileSync(main,'utf8'),{
-    require:name=>name==='electron'?electron:name==='./appearance-store.cjs'&&!realAppearance?{createAppearanceStore:()=>({load:()=>savedAppearance,save:id=>{savedAppearance=id;}})}:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
+    require:name=>name==='electron'?electron:name==='./appearance-store.cjs'&&!realAppearance?{DEFAULT_CHARACTER_ID,createAppearanceStore:()=>({load:()=>savedAppearance,save:id=>{savedAppearance=id;}})}:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
     __dirname:path.dirname(main),process:{env:{},platform:'darwin'},performance:{now:()=>0},console,
     setInterval:fn=>{intervals.push(fn);return intervals.length;},clearInterval(){},setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},Date
   },{filename:main});
@@ -84,15 +85,13 @@ test('appearance menu changes only appearance and persists selection while prese
   const h=await boot({service});const event={sender:h.windows[0].webContents};
   h.menu.current.items[0].submenu.find(e=>e.label==='Nap / Wake').click();
   const before=h.handlers['pet:initial-state'](event);
-  h.menu.current.items[0].submenu.find(e=>e.label==='Red panda').click();
-  const after=h.handlers['pet:initial-state'](event);
-  assert.equal(after.characterId,'red-panda');
-  assert.deepEqual({...after,characterId:before.characterId},{...before});
-  assert.equal(clears,0);assert.equal(h.savedAppearance(),'red-panda');
   h.menu.current.items[0].submenu.find(e=>e.label==='Dafeiyu').click();
+  const after=h.handlers['pet:initial-state'](event);
+  assert.equal(after.characterId,'dafeiyu');
+  assert.deepEqual({...after,characterId:before.characterId},{...before});
+  assert.equal(clears,0);assert.equal(h.savedAppearance(),'dafeiyu');
+  h.menu.current.items[0].submenu.find(e=>e.label==='Red panda').click();
   assert.deepEqual(h.handlers['pet:initial-state'](event),before);
-  const restored=await boot({savedAppearance:'red-panda'});
-  assert.equal(restored.handlers['pet:initial-state']({sender:restored.windows[0].webContents}).characterId,'red-panda');
 });
 
 test('visible composer receives pointer presence outside its window without needing a mouseleave event',async()=>{
@@ -172,8 +171,9 @@ test('actual appearance storage survives fresh main startup beside Chromium Pref
   // Reserve both spellings on case-sensitive systems too; on macOS they refer to the same file.
   for(const name of ['Preferences','preferences']) fs.writeFileSync(path.join(dir,name),'chromium-owned');
   const first=await boot({userData:dir,realAppearance:true});
-  first.menu.current.items[0].submenu.find(e=>e.label==='Red panda').click();
+  assert.equal(first.handlers['pet:initial-state']({sender:first.windows[0].webContents}).characterId,'red-panda');
+  first.menu.current.items[0].submenu.find(e=>e.label==='Dafeiyu').click();
   const second=await boot({userData:dir,realAppearance:true});
-  assert.equal(second.handlers['pet:initial-state']({sender:second.windows[0].webContents}).characterId,'red-panda');
+  assert.equal(second.handlers['pet:initial-state']({sender:second.windows[0].webContents}).characterId,'dafeiyu');
   assert.equal(fs.readFileSync(path.join(dir,'Preferences'),'utf8'),'chromium-owned');
 });
