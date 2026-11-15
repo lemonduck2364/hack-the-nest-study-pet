@@ -59,7 +59,7 @@ function createLobbyController({ BrowserWindow, ipcMain, clipboard, directory, g
       try {
         const state = await session.client.pulse();
         if (current !== session) return;
-        publish(session, state);
+        publish(session, { ...state, invite: session.server?.invite ?? session.state.invite });
         poll(session);
       } catch {
         if (current === session) goHome();
@@ -163,8 +163,10 @@ function createLobbyController({ BrowserWindow, ipcMain, clipboard, directory, g
     return true;
   });
   handle('lobby:copy-invite', session => {
-    if (session.state.phase !== 'room' || !session.state.invite) return false;
-    clipboard.writeText(session.state.invite);
+    if (session.state.phase !== 'room') return false;
+    const invite = session.server ? session.server.invite : session.state.invite;
+    if (!invite) return false;
+    clipboard.writeText(invite);
     return true;
   });
   return {

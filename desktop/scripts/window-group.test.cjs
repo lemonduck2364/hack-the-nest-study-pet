@@ -212,10 +212,10 @@ function lobbyProfile(t) {
 test('hosting transfers the selected pet only after acknowledgement and Go Home restores the same window', async t => {
   const userData = lobbyProfile(t);
   const localInvite = '127.0.0.1:5173/deadbeef1234';
-  const publicInvite = '192.168.1.10:5173/deadbeef1234';
+  let publicInvite = '192.168.1.10:5173/deadbeef1234';
   let closeCount = 0;
   const network = {
-    startLobbyServer: async () => ({ invite: publicInvite, localInvite, close: async () => { closeCount++; } }),
+    startLobbyServer: async () => ({ get invite() { return publicInvite; }, localInvite, close: async () => { closeCount++; } }),
     joinLobby: async (invite, { petId, appearance }) => {
       assert.equal(invite, localInvite);
       return { initialState: { pets: [{ id: petId, appearance, seat: 0 }], greeting: null } };
@@ -241,8 +241,11 @@ test('hosting transfers the selected pet only after acknowledgement and Go Home 
   assert.equal(chat.visible, false);
   app.electron.app.emit('activate');
   assert.equal(pet.visible, false);
+  publicInvite = '192.168.2.10:5173/deadbeef1234';
   assert.equal(invoke('copy-invite'), true);
   assert.equal(app.electron.clipboard.value, publicInvite);
+  publicInvite = '';
+  assert.equal(invoke('copy-invite'), false);
   invoke('go-home');
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(window.isDestroyed(), true);

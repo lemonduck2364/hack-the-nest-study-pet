@@ -149,6 +149,7 @@ function updateEntryControls() {
 
 function updateRoomStatus() {
   if (copied) roomStatus.textContent = 'Invite copied.';
+  else if (!state.invite) roomStatus.textContent = 'Connect to Wi-Fi or a hotspot to share an invite.';
   else roomStatus.textContent = state.pets.length < 2 ? 'Waiting for a friend…' : 'Your friend is here.';
 }
 
