@@ -142,10 +142,11 @@ test('a provider error preserves saved memory and a later send can still reply',
   const memory = await data.reopen();
   await memory.apply([{ op: 'add', id: '', quote: FIRST }], FIRST);
   let calls = 0;
-  const chat = session(memory, async () => ++calls === 1
+  const chat = session(memory, async () => ++calls <= 2
     ? new Response('unavailable', { status: 503 })
     : response({ reply: 'Want a quiet tea break?', edits: [] }));
   assert.equal((await chat.send('Hi')).code, 'provider');
+  assert.equal(calls, 2);
   assert.equal((await chat.send('Hi')).ok, true);
   assert.equal((await data.reopen()).snapshot().entries[0].quote, FIRST);
 });

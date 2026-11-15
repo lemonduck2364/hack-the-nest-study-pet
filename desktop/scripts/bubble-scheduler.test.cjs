@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createBubbleScheduler, readingMs, FADE_MS, MAX_SPEECH_MS } = require('../src/bubble-scheduler.cjs');
+const { createBubbleScheduler, readingMs, FADE_MS } = require('../src/bubble-scheduler.cjs');
 function setup() {
   let time=0, id=0;
   const timers=new Map(), scheduled=[], events=[];
@@ -51,18 +51,70 @@ test('stale expiry and fade callbacks cannot hide a newer bubble',()=>{
   oldExpiry();oldFade();assert.deepEqual(bubble.snapshot(),next);
   tick(3000+FADE_MS);assert.equal(bubble.snapshot().phase,'hidden');
 });
-test('page interaction grants reading time with a hard lifetime; old-page timers are inert',()=>{
-  const {bubble,tick,scheduled}=setup();bubble.speak('x'.repeat(100),true);
-  const serial=bubble.snapshot().serial, oldTimer=scheduled.at(-1);
-  tick(5000);assert.equal(bubble.pageChanged(serial,1,200),true);
-  oldTimer();assert.equal(bubble.snapshot().phase,'visible');
-  assert.equal(bubble.pageChanged(serial-1,2,200),false);
-  assert.equal(bubble.pageChanged(serial,1,200),false);
-  tick(10000);assert.equal(bubble.snapshot().phase,'visible');
-  bubble.pageChanged(serial,2,300);tick(10000);bubble.pageChanged(serial,3,300);
-  tick(MAX_SPEECH_MS-25000);assert.equal(bubble.snapshot().phase,'fading');
-  assert.equal(bubble.pageChanged(serial,4,300),false);
-  tick(FADE_MS);assert.equal(bubble.snapshot().phase,'hidden');
+test('each subtitle displays for its own reading time, even past the previous thirty-second limit', () => {
+  const {bubble,tick} = setup();
+  const lengths = [20, ...Array(9).fill(60)];
+  bubble.speak('x'.repeat(560), true);
+  const {serial} = bubble.snapshot();
+  assert.equal(bubble.setSpeechPages(serial, lengths), true);
+  for (const [index, length] of lengths.entries()) {
+    assert.equal(bubble.snapshot().pageIndex, index);
+    tick(readingMs(length)-1);
+    assert.equal(bubble.snapshot().pageIndex, index);
+    assert.equal(bubble.snapshot().phase, 'visible');
+    tick(1);
+  }
+  assert.equal(bubble.snapshot().phase, 'fading');
+  tick(FADE_MS);
+  assert.equal(bubble.snapshot().phase, 'hidden');
+});
+test('manual navigation, pause, and drag suspension retain the right subtitle and elapsed time', () => {
+  const {bubble,tick,scheduled} = setup();
+  bubble.speak('x'.repeat(60), true);
+  const {serial} = bubble.snapshot();
+  assert.equal(bubble.setSpeechPages(serial - 1, [20,20,20]), false);
+  assert.equal(bubble.setSpeechPages(serial, [20,20]), false);
+  assert.equal(bubble.setSpeechPages(serial, [20,20,20]), true);
+  const firstTimer = scheduled.at(-1);
+  tick(1000);
+  bubble.setSuspended(true);
+  tick(60000);
+  firstTimer();
+  assert.equal(bubble.snapshot().pageIndex, 0);
+  bubble.setSuspended(false);
+  tick(2000);
+  assert.equal(bubble.snapshot().pageIndex, 1);
+  assert.equal(bubble.pageChanged(serial, 1), false, 'a late Next click cannot skip another page');
+  assert.equal(bubble.toggleSubtitlePause(serial), true);
+  assert.equal(bubble.pageChanged(serial, 0), true);
+  bubble.setSuspended(true);
+  tick(30000);
+  bubble.setSuspended(false);
+  tick(30000);
+  assert.equal(bubble.snapshot().pageIndex, 0);
+  assert.equal(bubble.snapshot().paused, true);
+  assert.equal(bubble.toggleSubtitlePause(serial), true);
+  tick(3000);
+  assert.equal(bubble.snapshot().pageIndex, 1);
+});
+test('a replaced or dismissed subtitle cannot advance or restore stale speech', () => {
+  const {bubble,tick,scheduled} = setup();
+  bubble.speak('first speech', true);
+  const {serial} = bubble.snapshot();
+  bubble.setSpeechPages(serial, [6,6]);
+  const oldAdvance = scheduled.at(-1);
+  bubble.speak('new reply', true);
+  const newer = bubble.snapshot();
+  oldAdvance();
+  assert.deepEqual(bubble.snapshot(), newer);
+  assert.equal(bubble.toggleSubtitlePause(serial), false);
+  bubble.setSpeechPages(newer.serial, [4,5]);
+  const dismissedAdvance = scheduled.at(-1);
+  bubble.dismiss(newer.serial);
+  dismissedAdvance();
+  assert.equal(bubble.snapshot().pageIndex, 0);
+  tick(FADE_MS);
+  assert.equal(bubble.snapshot().phase, 'hidden');
 });
 test('tap greetings do not interrupt a reply, but dismissal and subsequent new speech work',()=>{
   const {bubble,tick}=setup();bubble.speak('a reply',true);

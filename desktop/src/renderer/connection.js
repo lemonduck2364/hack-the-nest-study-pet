@@ -3,7 +3,7 @@ const api = window.desktopPet;
 const field = document.getElementById('api-key');
 let busy = false, configured = false, requestBusy = false, credentialState = 'none';
 const failureDescriptions = {
-  quota:'Gemini quota or rate limit reached', limit:'This run reached its 30-send limit',
+  quota:'Gemini quota or rate limit reached', limit:'This run reached its 30-request limit',
   auth:'Gemini rejected the key or project access', network:'Could not reach Gemini over the network',
   timeout:'Gemini did not reply within 25 seconds', provider:'Gemini was temporarily unavailable',
   invalid_response:'Gemini returned an unreadable reply', empty:'Gemini returned no usable reply',

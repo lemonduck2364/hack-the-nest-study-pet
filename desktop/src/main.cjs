@@ -44,6 +44,7 @@ function repositionCompanions() {
 function recoverPetRenderer() {
   if (quitting || !petWindow || petWindow.isDestroyed() || recoveryTimer) return;
   petReady = false; pointerInsidePet = false; drag = null; life.setHeld(false); life.setMotionPending(false); setMouseHandling();
+  bubbles.setSuspended(false);
   for (const window of [hintWindow, bubbleWindow, chatWindow, connectionWindow]) window?.hide();
   const now = Date.now();
   if (now - recoverySince > 60000) { recoveryAttempts = 0; recoverySince = now; }
@@ -96,6 +97,7 @@ function displayBubble(content) {
   } else if (currentBubble.phase === 'visible') syncBubbleVisibility();
 }
 function syncBubbleVisibility() {
+  bubbles.setSuspended(Boolean(drag));
   if (!bubbleReady || bubbleWindow.isDestroyed()) return;
   if (currentBubble.phase === 'visible' && !drag && petReady && petWindow.isVisible()) bubbleWindow.showInactive();
   else if (currentBubble.phase !== 'fading' || !petReady || drag || !petWindow.isVisible()) bubbleWindow.hide();
@@ -325,6 +327,7 @@ function createWindow() {
   petWindow.on('move', repositionCompanions);
   petWindow.on('hide', () => {
     pointerInsidePet = false; drag = null; life.setHeld(false); setMouseHandling();
+    bubbles.setSuspended(false);
     hideHint(); bubbleWindow?.hide(); chatWindow?.hide(); connectionWindow?.hide();
   });
   petWindow.on('close', event => { if (!quitting) { event.preventDefault(); app.quit(); } });
@@ -363,8 +366,9 @@ ipcMain.on('pet:context-menu', event => {
 });
 ipcMain.on('pet:drag-start', (event, point) => {
   if (!validSender(event) || !validPoint(point) || drag) return;
-  hideHint(); if (bubbleReady) bubbleWindow.hide();
+  hideHint();
   drag = { pointer: point, window: petWindow.getBounds() };
+  syncBubbleVisibility();
   life.setHeld(true);
   publishLife();
   setMouseHandling();
@@ -381,7 +385,8 @@ ipcMain.on('pet:drag-end', event => {
   drag = null;
   life.setHeld(false);
   publishLife();
-  if (bubbleReady) { positionBubble(); syncBubbleVisibility(); }
+  if (bubbleReady) positionBubble();
+  syncBubbleVisibility();
   setMouseHandling();
 });
 ipcMain.on('chat:open', event => {
@@ -465,9 +470,10 @@ ipcMain.on('bubble:interactive', (event, value) => {
   }
 });
 ipcMain.on('bubble:page', (event, value) => {
-  if (!senderIs(event, bubbleWindow) || !Number.isInteger(value?.total) || value.total < 1 || value.total > 4000
-    || !Number.isInteger(value.index) || value.index < 0 || value.index >= value.total) return;
-  bubbles.pageChanged(value.serial, value.index, value.characters);
+  if (!senderIs(event, bubbleWindow) || !value) return;
+  if (Array.isArray(value.pageLengths)) bubbles.setSpeechPages(value.serial, value.pageLengths);
+  else if (value.togglePause === true) bubbles.toggleSubtitlePause(value.serial);
+  else bubbles.pageChanged(value.serial, value.index);
 });
 ipcMain.on('bubble:dismiss', (event, serial) => { if (senderIs(event, bubbleWindow) && serial === currentBubble.serial) dismissSpeech(serial); });
 if (!app.requestSingleInstanceLock()) app.quit();
