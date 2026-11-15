@@ -6,7 +6,7 @@ const life = createLife();
 const { createChatService } = require('./chat-service.cjs');
 const { createCompanionMemory } = require('./companion-memory.cjs');
 const { createCredentialStore } = require('./credential-store.cjs');
-const { resolvePack } = require('./renderer/character-pack.js');
+const { resolvePack, registry, appearanceOptions } = require('./renderer/character-pack.js');
 const { createAppearanceStore, DEFAULT_CHARACTER_ID } = require('./appearance-store.cjs');
 const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
 const { createLobbyController } = require('./lobby-controller.cjs');
@@ -259,7 +259,7 @@ function returnFromLobby() {
 }
 function selectAppearance(id) {
   if (lobby?.isJoining() || lobby?.isAway()) return;
-  if (!['dafeiyu', 'red-panda'].includes(id) || id === characterId) return;
+  if (!Object.hasOwn(registry, id) || id === characterId) return;
   // Appearance changes never reset the pet's life, conversation or connection.
   try { appearanceStore.save(id); } catch { diagnostic('appearance preference could not be saved'); }
   characterId = id;
@@ -275,8 +275,9 @@ function menuTemplate(fixedSleepLabel = false) {
     { label: fixedSleepLabel ? 'Nap / Wake' : life.snapshot().activity === 'sleep' ? 'Wake' : 'Nap', enabled: atHome, click: toggleSleep },
     { label: 'Eye tracking', type: 'checkbox', checked: gazeEnabled, click: () => { gazeEnabled = !gazeEnabled; publishLife(); refreshAppMenu(); } },
     { type: 'separator' },
-    { label: 'Dafeiyu', type: 'radio', enabled: atHome, checked: characterId === 'dafeiyu', click: () => selectAppearance('dafeiyu') },
-    { label: 'Red panda', type: 'radio', enabled: atHome, checked: characterId === 'red-panda', click: () => selectAppearance('red-panda') },
+    ...appearanceOptions.map(({ id, label }) => ({
+      label, type: 'radio', enabled: atHome, checked: characterId === id, click: () => selectAppearance(id)
+    })),
     { type: 'separator' },
     { label: 'Bring back', click: () => {
       if (lobby?.isAway()) { lobby.goHome(); return; }

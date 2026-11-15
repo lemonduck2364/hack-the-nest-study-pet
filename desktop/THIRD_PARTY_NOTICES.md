@@ -71,3 +71,7 @@ manifest rather than silently assumed to fit the current desktop viewport.
 The eye calibration and poster files above are retained from the earlier
 experiment; their presence does not require eye deformation during normal
 activities. All newly downloaded WebM bytes are unchanged upstream assets.
+
+
+## Pixel panda appearance
+The Pixel panda artwork comes from the team-provided `red-panda/desktop-animations/desktop-animations.aseprite` and `red-panda/pixel-animation-313/laptop-refined/laptop.aseprite`. The source files are preserved under `src/renderer/assets/pixel-panda/source/`. The runtime atlas flattens visible art layers, omitting the magenta preview layer, and preserves the source pixel grid and frame durations. This third appearance uses team-provided art, with no new license grant expressed by this notice.

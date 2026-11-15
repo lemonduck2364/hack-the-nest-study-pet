@@ -42,6 +42,7 @@ function present(source, clip) {
     const time = Number.isFinite(source.decodedTime) && Math.abs(source.decodedTime - playbackTime) <= .08
       ? source.decodedTime : playbackTime;
     if (!lastRaw || playbackTime !== lastRawTime || clip !== lastRawClip) {
+      scratchContext.imageSmoothingEnabled = pack.kind !== 'atlas';
       scratchContext.clearRect(0, 0, pack.width, pack.height);
       scratchContext.drawImage(source, 0, 0, pack.width, pack.height);
       const frame = scratchContext.getImageData(0, 0, pack.width, pack.height);
@@ -51,6 +52,7 @@ function present(source, clip) {
       lastRaw = frame; lastRawTime = playbackTime; lastRawClip = clip;
     }
     if (clip !== visibleClip) {
+      canvas.style.imageRendering = pack.kind === 'atlas' ? 'pixelated' : 'auto';
       const display = definition?.display || pack.display;
       Object.assign(canvas.style, Object.fromEntries(Object.entries(display).map(([key, value]) => [key, `${value}px`])));
     }
@@ -107,7 +109,9 @@ function createActor() {
       document.body.appendChild(video); return video;
     }
   };
-  const actor = pack.kind === 'sprite' ? window.PetSprite.createPlayer(configuration) : window.PetAnimation.createPlayer(configuration);
+  const adapter = pack.kind === 'atlas' ? window.PetAtlasPlayer
+    : pack.kind === 'sprite' ? window.PetSprite : window.PetAnimation;
+  const actor = adapter.createPlayer(configuration);
   const start = actor.start.bind(actor);
   let started = false;
   actor.start = () => {
@@ -183,7 +187,7 @@ function animate(now) {
   const before = player.inspect();
   const sleeping = life.activity === 'sleep' || Boolean(life.manualNap) || [pack.sleep?.enter, pack.sleep?.loop, pack.sleep?.exit].filter(Boolean).includes(before.active);
   const busy = Boolean(before.reaction || before.reactionPending);
-  const looking = pack.clips[visibleClip]?.look;
+  const looking = pack.clips[visibleClip]?.look || pack.clips[before.reaction]?.directional;
   const gazeFrame = looking ? frameGeometry(visibleClip) : proximity;
   const lookTarget = looking
     ? geometry.gazeTarget(lastPointer, gazeFrame.bounds, true, gazeFrame.focus) : { x: 0, y: 0 };
@@ -194,6 +198,7 @@ function animate(now) {
     reducedMotion: reducedMotion.matches, milliseconds: dt });
   if (nearby && !busy) player.react(pack.reactions[0]);
   else if (!nearby && busy) player.cancelReaction();
+  player.setGaze?.(lookGaze);
   player.draw();
   const motion = player.inspect();
   const reacting = Boolean(motion.reaction || motion.reactionPending);

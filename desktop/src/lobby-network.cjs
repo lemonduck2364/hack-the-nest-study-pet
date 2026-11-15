@@ -8,7 +8,7 @@ const { randomBytes, randomUUID } = require('node:crypto');
 const ROOM_CODE = /^[a-f0-9]{12}$/i;
 const MEMBER_TOKEN = /^[a-f0-9]{32}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
-const APPEARANCES = new Set(['red-panda', 'dafeiyu']);
+const { registry } = require('./renderer/character-pack.js');
 const LOOPBACK = '127.0.0.1';
 const REQUEST_TIMEOUT_MS = 2000;
 const STALE_MS = 8000;
@@ -53,7 +53,7 @@ function parseInvite(invite) {
 }
 
 function validPet(petId, appearance) {
-  return typeof petId === 'string' && UUID.test(petId) && APPEARANCES.has(appearance);
+  return typeof petId === 'string' && UUID.test(petId) && typeof appearance === 'string' && Object.hasOwn(registry, appearance);
 }
 
 async function readJson(stream) {

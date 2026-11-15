@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const IDS = new Set(['dafeiyu', 'red-panda']);
+const { registry } = require('./renderer/character-pack.js');
 const DEFAULT_CHARACTER_ID = 'red-panda';
 function createAppearanceStore(directory) {
   const filename = path.join(directory, 'appearance.json');
@@ -11,11 +11,11 @@ function createAppearanceStore(directory) {
       try {
         if (fs.statSync(filename).size > 1024) return DEFAULT_CHARACTER_ID;
         const { characterId } = JSON.parse(fs.readFileSync(filename, 'utf8'));
-        return IDS.has(characterId) ? characterId : DEFAULT_CHARACTER_ID;
+        return Object.hasOwn(registry, characterId) ? characterId : DEFAULT_CHARACTER_ID;
       } catch { return DEFAULT_CHARACTER_ID; }
     },
     save(characterId) {
-      if (!IDS.has(characterId)) throw new Error('Unknown appearance');
+      if (!Object.hasOwn(registry, characterId)) throw new Error('Unknown appearance');
       fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
       const temporary = path.join(directory, `.appearance-${randomUUID()}.tmp`);
       try {
