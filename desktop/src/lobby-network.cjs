@@ -27,15 +27,15 @@ function privateIPv4(host) {
     || (first === 192 && second === 168);
 }
 
-function activeLobbyAddress() {
-  const interfaces = Object.entries(networkInterfaces());
+function activeLobbyAddress(getInterfaces) {
+  const interfaces = Object.entries(getInterfaces());
   // Prefer the Mac's Wi-Fi or Ethernet interfaces over virtual adapters.
   interfaces.sort(([first], [second]) => Number(/^en\d+$/.test(second)) - Number(/^en\d+$/.test(first)));
   for (const [, addresses] of interfaces) {
     const match = addresses.find(({ internal, address }) => !internal && privateIPv4(address));
     if (match) return match.address;
   }
-  return LOOPBACK;
+  return null;
 }
 
 function parseInvite(invite) {
@@ -78,7 +78,7 @@ function reply(response, status, body = null) {
   response.end(payload);
 }
 
-async function startLobbyServer({ bindHost = '0.0.0.0' } = {}) {
+async function startLobbyServer({ bindHost = '0.0.0.0', getInterfaces = networkInterfaces } = {}) {
   if (bindHost !== '0.0.0.0' && bindHost !== LOOPBACK) throw new Error('Could not host a Lobby.');
   const code = randomBytes(6).toString('hex');
   const members = new Map();
@@ -161,10 +161,12 @@ async function startLobbyServer({ bindHost = '0.0.0.0' } = {}) {
   }
 
   const { port } = server.address();
-  const host = bindHost === LOOPBACK ? LOOPBACK : activeLobbyAddress();
   let closing;
   return {
-    invite: `${host}:${port}/${code}`,
+    get invite() {
+      const host = bindHost === LOOPBACK ? LOOPBACK : activeLobbyAddress(getInterfaces);
+      return host ? `${host}:${port}/${code}` : '';
+    },
     localInvite: `${LOOPBACK}:${port}/${code}`,
     close() {
       if (!closing) {
@@ -178,8 +180,26 @@ async function startLobbyServer({ bindHost = '0.0.0.0' } = {}) {
   };
 }
 
+function joinTransportMessage(code) {
+  switch (code) {
+    case 'ECONNREFUSED':
+      return 'No room answered. Ask the host to keep the room open and copy a fresh invite.';
+    case 'EACCES':
+    case 'EPERM':
+      return 'Local network access was blocked. In System Settings → Privacy & Security → Local Network, allow Nest Pet and try Join again.';
+    case 'ENETUNREACH':
+    case 'EHOSTUNREACH':
+    case 'ETIMEDOUT':
+    case 'ABORT_ERR':
+      return 'Could not reach the host. Check that both Macs are on the same Wi-Fi or hotspot and that Nest Pet has Local Network access.';
+    default:
+      return CONNECTION_ERROR;
+  }
+}
+
 function requestLobby(endpoint, operation, body) {
   const payload = JSON.stringify(body);
+  const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   return new Promise((resolve, reject) => {
     // Numeric IPv4 with Node HTTP keeps this on the requested LAN endpoint without proxies or redirects.
     const request = http.request({
@@ -188,7 +208,7 @@ function requestLobby(endpoint, operation, body) {
       path: '/nest-pet/lobby/' + operation,
       method: 'POST',
       agent: false,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
@@ -197,11 +217,12 @@ function requestLobby(endpoint, operation, body) {
     }, async (response) => {
       if (response.statusCode !== 200) {
         response.destroy();
-        const message = response.statusCode === 409
-          ? 'The Lobby is full or this pet is already visiting.'
-          : response.statusCode === 403
-            ? 'This Lobby invite or visit has expired.'
-            : CONNECTION_ERROR;
+        let message = CONNECTION_ERROR;
+        if (response.statusCode === 409) message = 'The Lobby is full or this pet is already visiting.';
+        if (response.statusCode === 403) message = 'This Lobby invite or visit has expired.';
+        if (response.statusCode === 400 && operation === 'join') {
+          message = 'This room could not admit this pet. Use the same Nest Pet version on both Macs.';
+        }
         reject(new Error(message));
         return;
       }
@@ -209,10 +230,12 @@ function requestLobby(endpoint, operation, body) {
         resolve(await readJson(response));
       } catch {
         response.destroy();
-        reject(new Error(CONNECTION_ERROR));
+        reject(new Error(signal.aborted && operation === 'join' ? joinTransportMessage('ABORT_ERR') : CONNECTION_ERROR));
       }
     });
-    request.once('error', () => reject(new Error(CONNECTION_ERROR)));
+    request.once('error', (error) => {
+      reject(new Error(operation === 'join' ? joinTransportMessage(error.code) : CONNECTION_ERROR));
+    });
     request.end(payload);
   });
 }

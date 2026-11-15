@@ -50,7 +50,7 @@ If chat gets stuck, open **◉ → Connection…** and share the displayed error
 
 The greeting is scripted, so it works without a Gemini key. The room is hosted on the first Mac, and its invite works only while that room is open and reachable on the local network.
 
-If **Join** says it cannot connect, keep the host room open and copy a fresh invite after any Wi-Fi change. On both Macs, check **System Settings → Privacy & Security → Local Network** and confirm Nest Pet is allowed if it appears there. Some venue and guest networks block devices from reaching each other even on the same Wi-Fi. Switch both Macs to a network or hotspot that allows device-to-device connections, then host a new room and copy its new invite.
+If **Join** fails, first check that both Macs are running the same Nest Pet version. Keep the host room open and use **Copy Invite** again after any Wi-Fi change. On the joining Mac, check **System Settings → Privacy & Security → Local Network** and confirm Nest Pet is allowed if it appears there. Some guest networks block devices from reaching each other even on the same Wi-Fi. Switch both Macs to a network or hotspot that allows device-to-device connections, then copy a fresh invite.
 
 ## Rehearse the demo
 

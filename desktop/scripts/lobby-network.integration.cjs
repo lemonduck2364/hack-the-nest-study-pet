@@ -11,11 +11,28 @@ function makePet(appearance) {
   return { petId: randomUUID(), appearance };
 }
 
+test('a host shares its current LAN address after changing Wi-Fi', async (t) => {
+  let wlan = '10.0.0.53';
+  const room = await startLobbyServer({
+    getInterfaces: () => wlan ? { en0: [{ address: wlan, internal: false }] } : {}
+  });
+  t.after(() => room.close());
+
+  assert.match(room.invite, /^10\.0\.0\.53:/);
+  const portAndCode = room.invite.split(':')[1];
+  wlan = '192.168.1.20';
+  assert.equal(room.invite, '192.168.1.20:' + portAndCode);
+  wlan = null;
+  assert.equal(room.invite, '');
+  assert.match(room.localInvite, /^127\.0\.0\.1:/);
+});
+
 test('two clients see the same greeting, with authenticated two-seat presence', async (t) => {
   const room = await startLobbyServer();
   t.after(() => room.close());
 
-  assert.match(room.invite, /^(?:\d{1,3}\.){3}\d{1,3}:\d+\/[a-f0-9]{12}$/);
+  const guestInvite = room.invite || room.localInvite;
+  assert.match(guestInvite, /^(?:\d{1,3}\.){3}\d{1,3}:\d+\/[a-f0-9]{12}$/);
   assert.match(room.localInvite, /^127\.0\.0\.1:\d+\/[a-f0-9]{12}$/);
   const hostPet = makePet('red-panda');
   const guestPet = makePet('dafeiyu');
@@ -47,7 +64,7 @@ test('two clients see the same greeting, with authenticated two-seat presence', 
   });
   await assert.rejects(joinLobby(room.localInvite, { ...hostPet, petId: hostPet.petId.toUpperCase() }),
     /already visiting/);
-  const guest = await joinLobby(room.invite, guestPet);
+  const guest = await joinLobby(guestInvite, guestPet);
   assert.deepEqual(await host.pulse(), guest.initialState);
   assert.deepEqual(await guest.pulse(), guest.initialState);
   assert.deepEqual(guest.initialState.pets, [
@@ -62,7 +79,7 @@ test('two clients see the same greeting, with authenticated two-seat presence', 
   await Promise.allSettled([pendingPulse, guest.leave()]);
   assert.equal(await guest.leave(), undefined);
   assert.deepEqual(await host.pulse(), host.initialState);
-  const replacement = await joinLobby(room.invite, anotherPet);
+  const replacement = await joinLobby(guestInvite, anotherPet);
   assert.notEqual(replacement.initialState.greeting.id, guest.initialState.greeting.id);
   await room.close();
   await assert.rejects(host.pulse(), /Could not connect/);
@@ -116,5 +133,5 @@ test('client rejects redirects and times out when a room does not finish respond
     response.writeHead(200);
     response.write('{');
   });
-  await assert.rejects(joinLobby(invite, makePet('red-panda')), /Could not connect/);
+  await assert.rejects(joinLobby(invite, makePet('red-panda')), /Could not reach the host/);
 });
