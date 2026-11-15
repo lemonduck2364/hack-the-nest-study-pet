@@ -12,7 +12,7 @@ const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
 const { adjacentBounds, bubbleBounds, pointInside, fitPetBounds } = require('./window-layout.cjs');
 let credentialStore, appearanceStore, memory;
 let characterId = 'dafeiyu';
-const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), getMemory: () => memory, keyStore: {
+const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), getMemory: () => memory, reportMemory: ({ proposed, changed, saved }) => diagnostic(`memory edits=${proposed} changed=${changed} saved=${saved}`), keyStore: {
   load: () => credentialStore.load(), save: key => credentialStore.save(key), remove: () => credentialStore.remove(),
 } });
 let lifeTimer, cursorTimer;

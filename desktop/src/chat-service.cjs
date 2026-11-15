@@ -53,7 +53,7 @@ async function responseJSON(response, signal) {
   return JSON.parse(new TextDecoder().decode(all));
 }
 
-function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fetch, env = process.env, timeoutMs = 25000, keyStore, getMemory = () => null } = {}) {
+function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fetch, env = process.env, timeoutMs = 25000, keyStore, getMemory = () => null, reportMemory = () => {} } = {}) {
   let key = normalizeGeminiKey(env.GEMINI_API_KEY) || '';
   let attempts = 0, revision = 0, active = null, mutation = false;
   let credentialState = key ? 'session' : keyStore ? 'none' : 'unavailable';
@@ -206,6 +206,7 @@ function createChatService({ getPetState = () => ({}), fetchImpl = globalThis.fe
         clearTimeout(timer);
         const update = usesMemory ? await memory.apply(result.edits, text, () => run.revision === revision && !run.controller.signal.aborted) : null;
         if (run.revision !== revision || run.controller.signal.aborted) return failure('cancelled');
+        if (update) reportMemory({ proposed: result.edits.length, changed: update.changed, saved: update.saved });
         if (update?.saved && update.removed) transcript = [];
         else {
           transcript.push({ role: 'user', text }, { role: 'assistant', text: result.reply });

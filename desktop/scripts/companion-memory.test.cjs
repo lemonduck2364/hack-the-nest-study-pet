@@ -63,7 +63,7 @@ test('records a natural preference, encrypts it, recalls it in a fresh session w
     const body = JSON.parse(request.body);
     assert.equal(body.generationConfig.responseMimeType, 'application/json');
     assert.equal(request.headers['x-goog-api-key'], KEY);
-    return response({ reply: 'That sounds like a cozy ritual.', edits: [{ op: 'add', id: '', quote: FIRST }] });
+    return response({ reply: 'That sounds like a cozy ritual.', edits: [{ op: 'add', quote: FIRST }] });
   });
   assert.deepEqual(await chat.send(`${FIRST}. It helps me slow down.`), { ok: true, reply: 'That sounds like a cozy ritual.' });
   assert.equal(calls, 1);
