@@ -4,7 +4,7 @@
   // candidate has supplied a usable frame; loading never clears that canvas.
   function createPlayer({ pack, nextClip, makeVideo, present, report = () => {}, now = () => Date.now() }) {
     let active = null, pending = null, desired = pack.initial, frozen = false, staticMode = false, boundary = true;
-    let sequence = 0;
+    let sequence = 0, disposed = false;
     let reaction = null, reactionPending = null;
     const failed = new Set();
     const buffers = [makeVideo(), makeVideo()];
@@ -23,7 +23,7 @@
       failed.add(slot.clip); report('video-error', slot.clip); finishReaction();
     }
     function requestReaction({ clip, from = 0, to = 4, rate = 1, still = false, duration = 5, sustained = false }) {
-      if (!active || frozen || reaction || reactionPending || failed.has(clip) || !pack.clips[clip]) return false;
+      if (disposed || !active || frozen || reaction || reactionPending || failed.has(clip) || !pack.clips[clip]) return false;
       const speed = Math.max(.75, Math.min(1.5, Number(rate) || 1));
       const start = Math.max(0, Number(from) || 0);
       const end = Math.max(start + 2 * speed, Math.min(start + 5 * speed, Number(to) || start + 4));
@@ -53,7 +53,7 @@
       return true;
     }
     function play(slot) {
-      if (!slot || frozen || slot.still) return;
+      if (disposed || !slot || frozen || slot.still) return;
       const result = slot.video.play();
       if (result?.catch) result.catch(error => {
         if (error?.name !== 'AbortError') { if (reaction === slot) rejectReaction(slot); else if (active === slot) fail(slot); }
@@ -108,9 +108,9 @@
       if (!commit() && active && !pending && !failed.has(active.clip)) restart();
     }
     return {
-      start() { prepare(); },
+      start() { if (!disposed) prepare(); },
       request(clip, { immediate = false } = {}) {
-        if (!pack.clips[clip]) return;
+        if (disposed || !pack.clips[clip]) return;
         const changed = desired !== clip; desired = clip;
         if (immediate && changed) boundary = true;
         prepare(); if (boundary || staticMode) commit();
@@ -118,6 +118,7 @@
       react: requestReaction,
       cancelReaction: finishReaction,
       freeze(value, allowStaticTransitions = false) {
+        if (disposed) return;
         const wasFrozen = frozen;
         frozen = Boolean(value);
         staticMode = frozen && allowStaticTransitions;
@@ -128,6 +129,7 @@
         else play(active);
       },
       draw() {
+        if (disposed) return;
         if (reactionPending && now() - reactionPending.startedAt > 5000) rejectReaction(reactionPending);
         if (reaction) {
           if ((!reaction.still && reaction.video.currentTime >= reaction.to) || now() - reaction.startedAt >= reaction.duration * 1000) finishReaction();
@@ -150,7 +152,15 @@
       current() { const shown = reaction || active; return shown && { clip: shown.clip, time: shown.video.currentTime }; },
       inspect() { return { active: active?.clip, pending: pending?.clip, ready: pending?.ready, boundary,
         reaction: reaction?.clip, reactionPending: reactionPending?.clip,
-        blocked: failed.has(desired) || failed.has(nextClip(pack, active?.clip, desired)) }; }
+        blocked: failed.has(desired) || failed.has(nextClip(pack, active?.clip, desired)) }; },
+      dispose() {
+        disposed = true; active = pending = reaction = reactionPending = null;
+        for (const video of [...buffers, reactionVideo]) {
+          video.pause(); video.disposeFrameCallbacks?.();
+          video.onloadeddata = video.onseeked = video.onerror = video.onended = null;
+          video.removeAttribute?.('src'); video.load(); video.remove?.();
+        }
+      }
     };
   }
   const api = { createPlayer };

@@ -8,7 +8,7 @@ const { EventEmitter } = require('node:events');
 const { fitPetBounds, adjacentBounds, bubbleBounds } = require('../src/window-layout.cjs');
 const primary = { id: 1, workArea: { x:0,y:25,width:1440,height:875 } };
 const secondary = { id: 2, workArea: { x:-1920,y:0,width:1920,height:1080 } };
-async function boot({ service } = {}) {
+async function boot({ service, savedAppearance = 'dafeiyu', userData = '/synthetic-test-user-data', realAppearance = false } = {}) {
   const windows=[], timers=[], intervals=[], menu={};
   let displays=[primary,secondary];
   class Window extends EventEmitter {
@@ -25,7 +25,7 @@ async function boot({ service } = {}) {
     hide(){const was=this.visible;this.visible=false;if(was)this.emit('hide');} focus(){this.focuses++;}
     setIgnoreMouseEvents(){} loadFile(){} setVisibleOnAllWorkspaces(){throw new Error('must not broadcast across Spaces');}
   }
-  const app=new EventEmitter();Object.assign(app,{requestSingleInstanceLock:()=>true,whenReady:()=>Promise.resolve(),getPath:()=>'/synthetic-test-user-data',quit(){}});
+  const app=new EventEmitter();Object.assign(app,{requestSingleInstanceLock:()=>true,whenReady:()=>Promise.resolve(),getPath:()=>userData,quit(){}});
   const screen=new EventEmitter();Object.assign(screen,{
     getPrimaryDisplay:()=>primary,getCursorScreenPoint:()=>({x:-500,y:500}),
     getDisplayNearestPoint:()=>displays.find(d=>d.id===2)||primary,
@@ -37,13 +37,13 @@ async function boot({ service } = {}) {
     Tray,ipcMain:ipc,nativeImage:{createEmpty:()=>({})},screen,shell:{},powerMonitor:new EventEmitter()};
   const main=path.resolve(__dirname,'../src/main.cjs');
   vm.runInNewContext(fs.readFileSync(main,'utf8'),{
-    require:name=>name==='electron'?electron:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
+    require:name=>name==='electron'?electron:name==='./appearance-store.cjs'&&!realAppearance?{createAppearanceStore:()=>({load:()=>savedAppearance,save:id=>{savedAppearance=id;}})}:name==='./credential-store.cjs'?{createCredentialStore:()=>({load:async()=>null,save:async()=>{},remove:async()=>{}})}:name==='./chat-service.cjs'?{createChatService:()=>service||({getStatus:()=>({ready:false}),restoreCredentials:async()=>{},clear(){}})}:require(name.startsWith('.')?path.resolve(path.dirname(main),name):name),
     __dirname:path.dirname(main),process:{env:{},platform:'darwin'},performance:{now:()=>0},console,
     setInterval:fn=>{intervals.push(fn);return intervals.length;},clearInterval(){},setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},Date
   },{filename:main});
   await new Promise(setImmediate);
   windows.forEach(w=>w.webContents.emit('did-finish-load'));
-  return {windows,electron,timers,intervals,ipc,handlers,menu,removeSecondary(){displays=[primary];screen.emit('display-removed',{},secondary);}};
+  return {windows,electron,timers,intervals,ipc,handlers,menu,savedAppearance:()=>savedAppearance,removeSecondary(){displays=[primary];screen.emit('display-removed',{},secondary);}};
 }
 
 test('only Connection can replace/remove credentials and async changes finish before returning success',async()=>{
@@ -76,6 +76,23 @@ test('companions belong to one pet; explicit input opens without making passive 
   assert.ok(pet.visible && chat.visible);assert.equal(chat.focuses,1);assert.equal(pet.focuses,0);
   pet.hide();assert.ok(windows.every(w=>!w.visible));
   pet.webContents.emit('pet:unused');assert.equal(chat.visible,false);
+});
+
+test('appearance menu changes only appearance and persists selection while preserving sleep, energy and chat service',async()=>{
+  let clears=0;
+  const service={getStatus:()=>({ready:true,credentialState:'saved'}),restoreCredentials:async()=>{},clear:()=>{clears++;}};
+  const h=await boot({service});const event={sender:h.windows[0].webContents};
+  h.menu.current.items[0].submenu.find(e=>e.label==='Nap / Wake').click();
+  const before=h.handlers['pet:initial-state'](event);
+  h.menu.current.items[0].submenu.find(e=>e.label==='Red panda').click();
+  const after=h.handlers['pet:initial-state'](event);
+  assert.equal(after.characterId,'red-panda');
+  assert.deepEqual({...after,characterId:before.characterId},{...before});
+  assert.equal(clears,0);assert.equal(h.savedAppearance(),'red-panda');
+  h.menu.current.items[0].submenu.find(e=>e.label==='Dafeiyu').click();
+  assert.deepEqual(h.handlers['pet:initial-state'](event),before);
+  const restored=await boot({savedAppearance:'red-panda'});
+  assert.equal(restored.handlers['pet:initial-state']({sender:restored.windows[0].webContents}).characterId,'red-panda');
 });
 
 test('visible composer receives pointer presence outside its window without needing a mouseleave event',async()=>{
@@ -146,4 +163,17 @@ test('expired bubbles stay hidden after dragging, Bring back and renderer recove
   timers.shift()();pet.webContents.emit('did-finish-load');assert.equal(bubble.visible,false);
   ipc.emit('pet:caption',event,caption);assert.equal(bubble.visible,false);
   ipc.emit('pet:caption',event,{kind:'action',text:'playing again'});assert.equal(bubble.visible,true);
+});
+
+
+test('actual appearance storage survives fresh main startup beside Chromium Preferences on case-insensitive Macs', async t => {
+  const dir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'nest-main-appearance-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  // Reserve both spellings on case-sensitive systems too; on macOS they refer to the same file.
+  for(const name of ['Preferences','preferences']) fs.writeFileSync(path.join(dir,name),'chromium-owned');
+  const first=await boot({userData:dir,realAppearance:true});
+  first.menu.current.items[0].submenu.find(e=>e.label==='Red panda').click();
+  const second=await boot({userData:dir,realAppearance:true});
+  assert.equal(second.handlers['pet:initial-state']({sender:second.windows[0].webContents}).characterId,'red-panda');
+  assert.equal(fs.readFileSync(path.join(dir,'Preferences'),'utf8'),'chromium-owned');
 });

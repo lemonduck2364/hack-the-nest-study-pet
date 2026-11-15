@@ -1,5 +1,17 @@
 # Third-party character assets — local test
 
+## Team-provided red panda artwork
+
+`src/renderer/assets/red-panda/andrew-original.png` is an unchanged copy of
+`sprite pet_2.png`, supplied by Evan as Andrew/team artwork. Its provenance,
+SHA-256 digest, dimensions and runtime crop metadata are retained in that
+directory. It contains three static poses: wave, book and tea. No explicit
+license document accompanied it, so no open-source license or public
+redistribution grant is asserted. The CC BY-NC-SA terms below describe the
+separate upstream 大肥魚 assets, not this team-provided image.
+
+## Upstream 大肥魚 assets
+
 The unmodified transparent WebM clips in `src/renderer/assets/dafeiyu/`
 come from [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet),
 pinned to commit `572cf0ff68e7ffbe76afe4ba5fd8ae99ec7e0733`.

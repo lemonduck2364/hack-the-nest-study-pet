@@ -144,3 +144,12 @@ test('manual Nap cancels reaction and repeated state publication does not skip t
   assert.equal(h.player.current().clip,'sleep-start'); h.videos[1].end();
   assert.equal(h.player.current().clip,'sleep-loop');
 });
+test('disposing a video actor releases all decoders and invalidates late normal/reaction callbacks',()=>{
+  const h=harness();h.videos[0].ready();h.player.request('play-cat');const late=h.videos[1].onloadeddata;
+  h.player.react(dafeiyu.reactions[0]);const lateReaction=h.videos[2].onloadeddata;
+  let cancelled=0,removed=0;
+  for(const video of h.videos){video.disposeFrameCallbacks=()=>cancelled++;video.remove=()=>removed++;}
+  const before=h.shown.slice();h.player.dispose();late();lateReaction();h.player.draw();
+  assert.deepEqual(h.shown,before);assert.equal(cancelled,3);assert.equal(removed,3);
+  assert.ok(h.videos.every(video=>video.paused&&video.onloadeddata===null&&video.onended===null));
+});

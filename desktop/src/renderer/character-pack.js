@@ -13,7 +13,7 @@
   };
   const reactionClips = ['react-jump-grab', 'react-tail', 'react-wave'];
   const dafeiyu = {
-    id: 'dafeiyu', width: 640, height: 360,
+    id: 'dafeiyu', kind: 'video', width: 640, height: 360,
     bounds: { x: 213, y: 63, width: 213, height: 267 }, face: { x: 309, y: 190 },
     defaultEyeRegions: [{ x: 270, y: 178, width: 26, height: 24, maxX: 3, maxY: 2 }, { x: 321, y: 177, width: 28, height: 25, maxX: 3, maxY: 2 }],
     selfActions,
@@ -45,6 +45,49 @@
   dafeiyu.clips['react-jump-grab'].display = { left: -40, top: 0, width: 300, height: 168.75 };
   dafeiyu.clips['react-jump-grab'].bubbleAnchor = { x: 105, y: 43 };
   dafeiyu.clips['attention-look'] = { source: 'assets/dafeiyu/idle.webm', look: true };
+  const redPanda = {
+    id: 'red-panda', kind: 'sprite', width: 640, height: 360,
+    atlas: 'assets/red-panda/andrew-original.png', initial: 'reading',
+    bounds: { x: 203.886047, y: 63, width: 232.227907, height: 267 },
+    face: { x: 320.75, y: 172.25 },
+    defaultEyeRegions: [{ x: 290, y: 164, width: 18, height: 19, maxX: 3, maxY: 2 }, { x: 333, y: 161, width: 19, height: 20, maxX: 3, maxY: 2 }],
+    restingGaze: { x: 0, y: .55 },
+    attentionEaseMs: 220,
+    display: { ...dafeiyu.display }, bubbleAnchor: { x: 110, y: 64 },
+    anchors: { face: { x: .502, y: .499 }, composer: { x: .5, y: .77 } },
+    sprites: {
+      wave: { crop: [62, 8, 600, 708], destination: [206.864407, 63, 226.271186, 267] },
+      book: { crop: [785, 68, 561, 645], destination: [203.886047, 63, 232.227907, 267] },
+      tea: { crop: [1478, 7, 626, 713], destination: [202.789621, 63, 234.420757, 267] }
+    },
+    clips: {
+      reading: { sprite: 'book', restingEyes: true },
+      tea: { sprite: 'tea' },
+      greeting: { sprite: 'wave' },
+      'rest-book': { sprite: 'book', restingEyes: true, fallback: true },
+      'sleep-book': { sprite: 'book', restingEyes: true, fallback: true },
+      'attention-look': { sprite: 'book', look: true }
+    },
+    activities: { idle: 'reading', rest: 'rest-book', sleep: 'sleep-book', play: { eat: 'tea', default: 'reading' } },
+    sleep: { loop: 'sleep-book' },
+    selfActions: {
+      reading: { clip: 'reading', description: 'quietly reading a book', caption: 'just one more page…' },
+      tea: { clip: 'tea', description: 'enjoying a warm cup of tea', caption: 'a warm little tea break' }
+    },
+    actionDescriptions: { idle: 'quietly reading a book', rest: 'resting quietly with a book', sleep: 'resting quietly with a book',
+      play: { eat: 'enjoying a warm cup of tea', default: 'quietly reading a book' } },
+    captions: {
+      reading: { kind: 'action', text: 'just one more page…' },
+      tea: { kind: 'action', text: 'a warm little tea break' },
+      greeting: { kind: 'thought', text: 'oh, hello!' },
+      'rest-book': { kind: 'action', text: 'resting with my book…' },
+      'sleep-book': { kind: 'action', text: 'a quiet rest with my book…' },
+      'attention-look': { kind: 'thought', text: 'hmm? hello there…' }
+    },
+    reactions: [{ clip: 'attention-look', still: true, sustained: true }]
+  };
+  const registry = { dafeiyu, 'red-panda': redPanda };
+  function resolvePack(id) { return Object.hasOwn(registry, id) ? registry[id] : dafeiyu; }
   function activityClip(pack, state) {
     const mapping = pack.activities[state.activity] || pack.initial;
     return typeof mapping === 'string' ? mapping : mapping[state.action ?? state.play] || mapping.default;
@@ -52,7 +95,7 @@
   function nextClip(pack, active, desired) {
     const sleep = pack.sleep;
     if (!active) return pack.initial;
-    if (!sleep) return desired;
+    if (!sleep?.enter || !sleep?.exit) return desired;
     if (active === sleep.enter) return desired === sleep.loop ? sleep.loop : sleep.exit;
     if (active === sleep.loop) return desired === sleep.loop ? sleep.loop : sleep.exit;
     if (active === sleep.exit) return desired === sleep.loop ? sleep.enter : desired;
@@ -62,7 +105,7 @@
     const description = pack.actionDescriptions?.[state.activity];
     return typeof description === 'string' ? description : description?.[state.action ?? state.play] || description?.default || 'spending a quiet moment';
   }
-  const api = { dafeiyu, activityClip, nextClip, actionDescription };
+  const api = { dafeiyu, redPanda, registry, packs: registry, resolvePack, activityClip, nextClip, actionDescription };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PetCharacterPacks = api;
 })(globalThis);

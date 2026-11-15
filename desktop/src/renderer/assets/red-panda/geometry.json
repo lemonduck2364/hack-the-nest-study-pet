@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "sourceFile": "andrew-original.png",
+  "sourceDimensions": {
+    "width": 2172,
+    "height": 724
+  },
+  "sourceCells": {
+    "width": 724,
+    "height": 724,
+    "order": [
+      "wave",
+      "book",
+      "tea"
+    ]
+  },
+  "frameDimensions": {
+    "width": 640,
+    "height": 360
+  },
+  "trimAlphaThreshold": 16,
+  "trimNotes": "Rects bound pixels with alpha >16. Original contains faint nonzero-alpha pixels across most cell margins; source bytes are unchanged. Crop is performed at runtime. All meaningful-alpha pixels fit the declared rectangles.",
+  "alignment": "Each visible pose uniformly scales to height267, top63, ground330, and bounds centerx320. This aligns vertical extents; it does not deform poses or claim identical joint positions.",
+  "poses": {
+    "wave": {
+      "sourceRect": {
+        "x": 62,
+        "y": 8,
+        "width": 600,
+        "height": 708
+      },
+      "destinationRect": {
+        "x": 206.864407,
+        "y": 63,
+        "width": 226.271186,
+        "height": 267
+      },
+      "uniformScale": 0.3771186440677966,
+      "groundY": 330,
+      "headTopY": 63
+    },
+    "book": {
+      "sourceRect": {
+        "x": 785,
+        "y": 68,
+        "width": 561,
+        "height": 645
+      },
+      "destinationRect": {
+        "x": 203.886047,
+        "y": 63,
+        "width": 232.227907,
+        "height": 267
+      },
+      "uniformScale": 0.413953488372093,
+      "groundY": 330,
+      "headTopY": 63,
+      "eyes": [
+        {
+          "originalAtlasRect": {
+            "x": 994,
+            "y": 312,
+            "width": 43,
+            "height": 46
+          },
+          "frameRect": {
+            "x": 290,
+            "y": 164,
+            "width": 18,
+            "height": 19,
+            "maxX": 3,
+            "maxY": 2
+          }
+        },
+        {
+          "originalAtlasRect": {
+            "x": 1098,
+            "y": 305,
+            "width": 45,
+            "height": 48
+          },
+          "frameRect": {
+            "x": 333,
+            "y": 161,
+            "width": 19,
+            "height": 20,
+            "maxX": 3,
+            "maxY": 2
+          }
+        }
+      ],
+      "faceAnchor": {
+        "x": 320.75,
+        "y": 172.25
+      }
+    },
+    "tea": {
+      "sourceRect": {
+        "x": 1478,
+        "y": 7,
+        "width": 626,
+        "height": 713
+      },
+      "destinationRect": {
+        "x": 202.789621,
+        "y": 63,
+        "width": 234.420757,
+        "height": 267
+      },
+      "uniformScale": 0.3744740532959327,
+      "groundY": 330,
+      "headTopY": 63
+    }
+  },
+  "gazeNotes": "Book-only eye-interior ROIs are manually inspected against original source. maxX3/maxY2 are 640x360-frame pixels (~1.55/~1.03 DIP at330px display width), not 3 display pixels. No authored look-up or blink frames exist. Tea eyes are closed; do not synthesize open eyes."
+}

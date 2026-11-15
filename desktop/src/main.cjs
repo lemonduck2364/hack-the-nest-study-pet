@@ -5,11 +5,13 @@ const { createLife } = require('./life.cjs');
 const life = createLife();
 const { createChatService } = require('./chat-service.cjs');
 const { createCredentialStore } = require('./credential-store.cjs');
-const { dafeiyu } = require('./renderer/character-pack.js');
+const { resolvePack } = require('./renderer/character-pack.js');
+const { createAppearanceStore } = require('./appearance-store.cjs');
 const { createBubbleScheduler } = require('./bubble-scheduler.cjs');
 const { adjacentBounds, bubbleBounds, pointInside, fitPetBounds } = require('./window-layout.cjs');
-let credentialStore;
-const chat = createChatService({ getPetState: () => life.snapshot(), keyStore: {
+let credentialStore, appearanceStore;
+let characterId = 'dafeiyu';
+const chat = createChatService({ getPetState: () => ({ ...life.snapshot(), characterId }), keyStore: {
   load: () => credentialStore.load(), save: key => credentialStore.save(key), remove: () => credentialStore.remove(),
 } });
 let lifeTimer, cursorTimer;
@@ -18,7 +20,7 @@ const debug = process.env.PET_DEBUG === '1';
 let lastActivity;
 function diagnostic(message) { if (debug) console.log(`[pet] ${message}`); }
 function viewState() {
-  return { ...life.snapshot(), gazeEnabled, cursorPlayAllowed: !chatWindow?.isVisible() && !connectionWindow?.isVisible(), debug };
+  return { ...life.snapshot(), characterId, gazeEnabled, cursorPlayAllowed: !chatWindow?.isVisible() && !connectionWindow?.isVisible(), debug };
 }
 const SIZE = { width: 220, height: 240 };
 let petWindow, hintWindow, chatWindow, connectionWindow, bubbleWindow, tray, drag;
@@ -237,12 +239,24 @@ function showPet() {
   repositionCompanions();
   syncBubbleVisibility();
 }
+function selectAppearance(id) {
+  if (!['dafeiyu', 'red-panda'].includes(id) || id === characterId) return;
+  // Appearance changes never reset the pet's life, conversation or connection.
+  try { appearanceStore.save(id); } catch { diagnostic('appearance preference could not be saved'); }
+  characterId = id;
+  bubbleAnchor = { ...resolvePack(id).bubbleAnchor };
+  positionBubble(); publishLife(); refreshAppMenu();
+}
 function menuTemplate(fixedSleepLabel = false) {
   return [
     { label: 'Chat', click: openChat },
     { label: 'Connection…', click: () => openConnection(false) },
     { label: fixedSleepLabel ? 'Nap / Wake' : life.snapshot().activity === 'sleep' ? 'Wake' : 'Nap', click: toggleSleep },
     { label: 'Eye tracking', type: 'checkbox', checked: gazeEnabled, click: () => { gazeEnabled = !gazeEnabled; publishLife(); refreshAppMenu(); } },
+    { type: 'separator' },
+    { label: 'Dafeiyu', type: 'radio', checked: characterId === 'dafeiyu', click: () => selectAppearance('dafeiyu') },
+    { label: 'Red panda', type: 'radio', checked: characterId === 'red-panda', click: () => selectAppearance('red-panda') },
+    { type: 'separator' },
     { label: 'Bring back', click: () => {
       const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
       petWindow.setPosition(workArea.x + workArea.width - SIZE.width - 40, workArea.y + workArea.height - SIZE.height - 24);
@@ -263,7 +277,7 @@ function showPetMenu() {
     // Leave room for our compact menu near display edges. Native macOS still
     // chooses the final fit; popup coordinates are window-content-local DIP.
     const x = Math.round(Math.max(workArea.x + 8, Math.min(point.x, workArea.x + workArea.width - 180)) - bounds.x);
-    const y = Math.round(Math.max(workArea.y + 8, Math.min(point.y, workArea.y + workArea.height - 220)) - bounds.y);
+    const y = Math.round(Math.max(workArea.y + 8, Math.min(point.y, workArea.y + workArea.height - 300)) - bounds.y);
     // Electron reserves -1 as the "current mouse position" sentinel.
     options.x = x === -1 ? -2 : x;
     options.y = y === -1 ? -2 : y;
@@ -325,7 +339,7 @@ ipcMain.on('pet:motion-pending', (event, pending) => {
 });
 ipcMain.on('pet:diagnostic', (event, detail) => {
   if (!debug || !validSender(event) || !['video-ready', 'video-error', 'video-alpha', 'gaze-ready', 'gaze-error', 'attention-on', 'attention-off', 'clip-visible', 'reaction-start', 'reaction-end'].includes(detail?.kind)
-    || !(Object.hasOwn(dafeiyu.clips, detail?.clip) || detail?.clip === 'attention-look')) return;
+    || !Object.hasOwn(resolvePack(characterId).clips, detail?.clip)) return;
   if (detail.kind === 'video-alpha') {
     if (![detail.opaque, detail.transparent].every(n => Number.isInteger(n) && n >= 0 && n <= 14400)) return;
     diagnostic(`${detail.kind} clip=${detail.clip} opaque=${detail.opaque} transparent=${detail.transparent}`);
@@ -446,6 +460,9 @@ else {
   app.whenReady().then(async () => {
     credentialStore = createCredentialStore({ directory: path.join(app.getPath('userData'), 'credentials'), safeStorage });
     await chat.restoreCredentials();
+    appearanceStore = createAppearanceStore(path.join(app.getPath('userData'), 'companion-settings'));
+    characterId = appearanceStore.load();
+    bubbleAnchor = { ...resolvePack(characterId).bubbleAnchor };
     diagnostic(`connection=${chat.getStatus().credentialState} ready=${chat.getStatus().ready}`);
     createWindow();
     createCompanionWindows();
