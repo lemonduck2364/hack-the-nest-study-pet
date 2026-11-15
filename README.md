@@ -8,19 +8,20 @@ The pet can remember everyday details from conversation across app restarts. Rev
 
 ## Run the demo on your Mac
 
-If you received **Nest Pet.app**, double-click it in Finder. You can move it to Applications or drag it to the Dock to keep it handy. After opening, look near the lower-right corner of the desktop. Use **◉ → Bring back** if the pet is out of view, and **◉ → Quit** to close the app.
+If you already have **Nest Pet.app**, double-click it in Finder. You can move it to Applications or drag its red panda icon onto the app side of the Dock to open it again with one click. After opening, look near the lower-right corner of the desktop. Use **◉ → Bring back** if the pet is out of view, and **◉ → Quit** to close the app.
 
 ### Build the app from source
 
-On a Mac with Node.js 22.12 or later, open Terminal in the repo’s **desktop** folder and run:
+1. Sign in to GitHub, [download the current team build ZIP](https://github.com/lemonduck2364/hack-the-nest-study-pet/archive/refs/heads/desktop-pet.zip), and double-click the ZIP to unpack it. Start with a fresh download if you have an older copy.
+2. Install [Node.js 24 LTS for macOS](https://nodejs.org/en/download) if you don't already have Node.js 22.12 or later. Open a fresh Terminal window afterward.
+3. Type `cd` followed by a space. Drag the **desktop** folder from the unzipped project into Terminal and press **Return**.
+4. Paste this line into Terminal and press **Return**. The first build needs internet to download Electron.
 
 ```sh
-npm ci
-npm run smoke
-npm run build:mac
+npm ci && npm run smoke && npm run build:mac
 ```
 
-Double-click **desktop/dist/Nest Pet.app**. The first build uses the Electron version pinned by the project. The resulting app includes Electron and opens on its own. This is a local team build. Public distribution needs Developer ID signing and notarization.
+When the command finishes, open **desktop → dist → Nest Pet.app** in Finder, or double-click **Open Desktop Pet.command** at the top of the downloaded project. The Mac app has a red panda icon and includes Electron. After the first build, launch it from Finder or the Dock. This is a local team build. Public distribution needs Developer ID signing and notarization.
 
 ## Let the pet talk
 
@@ -42,12 +43,14 @@ If chat gets stuck, open **◉ → Connection…** and share the displayed error
 
 ## Try the Lobby with two Macs
 
-1. On both Macs, open **Nest Pet.app** and connect to the same Wi-Fi. Use the same branch/build on both. If you want two distinct characters, choose **Dafeiyu** on one Mac.
+1. On both Macs, quit any older copy, open the latest **Nest Pet.app**, and connect to the same Wi-Fi or hotspot that allows devices to reach each other. If you want two distinct characters, choose **Dafeiyu** on one Mac.
 2. On the first Mac choose **◉ → Visit Lobby → Host Room**. Copy the invite code and pass it to the second Mac.
 3. On the second Mac choose **◉ → Visit Lobby**, paste the code, and click **Join**. If macOS asks for local network access, allow it for Nest Pet. Both screens show the two pets and the same little greeting.
 4. On the guest Mac, click **Go Home** to bring its pet back. On the host Mac, **Go Home** closes the room and returns both pets to their desktops. Each Mac keeps its own chat memories.
 
-The greeting is scripted so you can show it without a Gemini key. If venue Wi-Fi blocks device-to-device connections, try putting both Macs on the same personal hotspot.
+The greeting is scripted, so it works without a Gemini key. The room is hosted on the first Mac, and its invite works only while that room is open and reachable on the local network.
+
+If **Join** says it cannot connect, keep the host room open and copy a fresh invite after any Wi-Fi change. On both Macs, check **System Settings → Privacy & Security → Local Network** and confirm Nest Pet is allowed if it appears there. Some venue and guest networks block devices from reaching each other even on the same Wi-Fi. Switch both Macs to a network or hotspot that allows device-to-device connections, then host a new room and copy its new invite.
 
 ## Rehearse the demo
 
